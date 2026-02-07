@@ -1,0 +1,204 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Backgrounds & Text */
+    --background: 0 0% 100%;
+    --foreground: 217 33% 17%;
+
+    /* Cards */
+    --card: 0 0% 100%;
+    --card-foreground: 217 33% 17%;
+
+    /* Popovers */
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 33% 17%;
+
+    /* Primary - Professional Blue */
+    --primary: 218 85% 33%;
+    --primary-50: 218 100% 96%;
+    --primary-100: 218 92% 90%;
+    --primary-200: 218 85% 75%;
+    --primary-600: 218 85% 33%;
+    --primary-700: 218 85% 28%;
+    --primary-900: 218 85% 18%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Light Gray */
+    --secondary: 215 14% 90%;
+    --secondary-foreground: 217 33% 17%;
+
+    /* Destructive - Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 215 14% 90%;
+    --muted-foreground: 217 8% 50%;
+
+    /* Accent - Green (for success states) */
+    --accent: 142 72% 29%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 142 72% 29%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 39 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 215 14% 90%;
+    --input: 215 14% 95%;
+    --ring: 218 85% 33%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 217 33% 17%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 218 85% 33%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 142 72% 29%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 33% 27%;
+    --sidebar-ring: 218 85% 33%;
+  }
+
+  .dark {
+    --background: 217 33% 17%;
+    --foreground: 0 0% 98%;
+
+    --card: 217 33% 22%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 217 33% 22%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 218 85% 60%;
+    --primary-50: 218 100% 96%;
+    --primary-100: 218 92% 90%;
+    --primary-200: 218 85% 75%;
+    --primary-600: 218 85% 33%;
+    --primary-700: 218 85% 28%;
+    --primary-900: 218 85% 18%;
+    --primary-foreground: 217 33% 17%;
+
+    --secondary: 217 33% 27%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 217 33% 27%;
+    --muted-foreground: 215 14% 60%;
+
+    --accent: 142 72% 50%;
+    --accent-foreground: 217 33% 17%;
+
+    --success: 142 72% 50%;
+    --success-foreground: 217 33% 17%;
+
+    --warning: 39 92% 60%;
+    --warning-foreground: 217 33% 17%;
+
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 217 33% 17%;
+
+    --border: 217 33% 27%;
+    --input: 217 33% 27%;
+    --ring: 218 85% 60%;
+
+    --sidebar-background: 217 33% 14%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 218 85% 60%;
+    --sidebar-primary-foreground: 217 33% 17%;
+    --sidebar-accent: 142 72% 50%;
+    --sidebar-accent-foreground: 217 33% 17%;
+    --sidebar-border: 217 33% 24%;
+    --sidebar-ring: 218 85% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* MANDATORY FONT OVERRIDE */
+  html,
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Ensure all headings and interactive elements inherit font */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Grid Layout Utility */
+  .grid-layout {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-muted transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border border-border;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+
+  .card-base {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm;
+  }
+
+  /* Font Utility Class */
+  .font-serif {
+    font-family: "Times New Roman", Times, serif;
+  }
+}
