@@ -4,8 +4,6 @@ import {
   Menu,
   X,
   LogOut,
-  Settings,
-
   Users,
   Calculator,
   FileText,
@@ -33,6 +31,7 @@ export default function DashboardLayout({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
@@ -46,13 +45,19 @@ export default function DashboardLayout({
       ]
     },
     { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
-    { id: "payroll", label: "Payroll Processing", icon: Calculator, href: "/payroll" },
-    { id: "reports", label: "Reports", icon: FileText, href: "/reports" },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" }];
+    { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
+    {
+      id: "reports",
+      label: "REPORTS",
+      icon: ScrollText,
+      subItems: [
+        { id: "pay-bill", label: "Pay Bill Detail", href: "/reports/pay-bill" }
+      ]
+    }];
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (userRole === "Employee") return item.id === "dashboard";
-    if (userRole === "Auditor") return ["dashboard", "files", "reports"].includes(item.id);
+    if (userRole === "Auditor") return ["dashboard", "files"].includes(item.id);
     return true;
   });
 
@@ -64,10 +69,16 @@ export default function DashboardLayout({
           const isActive = activeRoute === item.id || (item.subItems?.some(s => s.id === activeRoute));
 
           if (item.subItems) {
+            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : false);
+            const toggleOpen = () => {
+              if (item.id === 'files') setFilesOpen(!filesOpen);
+              if (item.id === 'reports') setReportsOpen(!reportsOpen);
+            };
+
             return (
               <li key={item.id} className="space-y-1">
                 <button
-                  onClick={() => setFilesOpen(!filesOpen)}
+                  onClick={toggleOpen}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${isActive ?
                     "text-sidebar-foreground bg-sidebar-accent/50" :
                     "text-sidebar-foreground hover:bg-sidebar-accent"}`}
@@ -76,10 +87,10 @@ export default function DashboardLayout({
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {(sidebarOpen || mobileSidebarOpen) && <span className="text-sm font-medium">{item.label}</span>}
                   </div>
-                  {(sidebarOpen || mobileSidebarOpen) && <ChevronDown className={`w-4 h-4 transition-transform ${filesOpen ? 'rotate-180' : ''}`} />}
+                  {(sidebarOpen || mobileSidebarOpen) && <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
                 </button>
 
-                {(sidebarOpen || mobileSidebarOpen) && filesOpen && (
+                {(sidebarOpen || mobileSidebarOpen) && isOpen && (
                   <ul className="pl-11 space-y-1 mt-1">
                     {item.subItems.map((sub) => (
                       <li key={sub.id}>
@@ -237,9 +248,6 @@ export default function DashboardLayout({
                   </div>
                   <button className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-secondary transition flex items-center gap-2">
                     <User className="w-4 h-4" /> Profile
-                  </button>
-                  <button className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-secondary transition flex items-center gap-2">
-                    <Settings className="w-4 h-4" /> Settings
                   </button>
                   <div className="border-t border-border"></div>
                   <Link

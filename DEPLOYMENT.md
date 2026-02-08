@@ -50,7 +50,7 @@ EXIT;
 
 Import your schema:
 ```bash
-mysql -u payroll_user -p enterprise_payroll < billing_db.sql
+mysql -u payroll_user -p enterprise_payroll < server/billing_db.sql
 ```
 
 ---
@@ -100,7 +100,7 @@ Nginx acts as the entry point. It serves the static React files and redirects `/
 ```bash
 sudo nano /etc/nginx/sites-available/enterprise-payroll
 ```
-Paste the config from `deployment/nginx.conf`. Ensure `root` matches `/var/www/enterprise-payroll/client/dist`.
+Paste the config from `client/deployment/nginx.conf`. Ensure `root` matches `/var/www/enterprise-payroll/client/dist`.
 
 ```bash
 # Enable the site and test

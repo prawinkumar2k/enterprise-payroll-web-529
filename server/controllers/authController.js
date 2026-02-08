@@ -27,6 +27,7 @@ export const login = async (req, res) => {
         const user = rows[0];
 
         if (!user) {
+            console.log('Login failed: User not found for userId:', userId);
             // Log failed login (User not found)
             await logAction({
                 userId: userId,
@@ -44,12 +45,20 @@ export const login = async (req, res) => {
             });
         }
 
+        console.log('User found:', user.UserID);
+        console.log('DB Password:', user.Password);
+        console.log('Input Password:', password);
+
         let isMatch = false;
         if (user.Password && (user.Password.startsWith('$2b$') || user.Password.startsWith('$2a$'))) {
+            console.log('Comparing bcrypt hash...');
             isMatch = await bcrypt.compare(password, user.Password);
         } else {
+            console.log('Comparing plain text...');
             isMatch = (password === user.Password);
         }
+
+        console.log('Password match result:', isMatch);
 
         if (!isMatch) {
             // Log failed login (Invalid password)

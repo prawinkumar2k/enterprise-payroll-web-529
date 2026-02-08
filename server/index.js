@@ -7,6 +7,8 @@ import employeeRoutes from './routes/employees.js';
 import payrollRoutes from './routes/payroll.js';
 import userRoutes from './routes/users.js';
 import logRoutes from './routes/log.routes.js';
+import salaryRoutes from './routes/salary.routes.js';
+import reportRoutes from './routes/report.routes.js';
 import { logMiddleware } from './middleware/log.middleware.js';
 import { requestLogger, errorHandler, notFound } from './middleware/commonMiddleware.js';
 
@@ -14,7 +16,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors());
@@ -25,8 +27,10 @@ app.use(logMiddleware); // Enterprise Audit Logger
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/reports', reportRoutes); // Payroll Reporting Module
 app.use('/api/employees', employeeRoutes);
-app.use('/api/payroll', payrollRoutes);
+app.use('/api/payroll', payrollRoutes); // Deprecated/Old
+app.use('/api/salary', salaryRoutes); // New Salary Processing Module
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 

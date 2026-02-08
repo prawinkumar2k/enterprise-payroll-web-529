@@ -78,13 +78,19 @@ Then restart the application.
 ```
 enterprise-payroll-web-529/
 ├── client/              # Frontend (React + Vite)
+│   ├── public/         # Static assets (favicons, images)
+│   ├── shared/         # Shared frontend logic and types
+│   ├── netlify/        # Netlify deployment functions
+│   ├── deployment/     # Nginx and other deployment configs
 │   ├── package.json    # Client-specific scripts
 │   └── ...
 ├── server/              # Backend (Express)
+│   ├── scripts/        # Database and maintenance scripts
+│   ├── billing_db.sql  # Database schema and data dump
 │   ├── package.json    # Server-specific scripts
 │   └── ...
-├── package.json         # Root scripts (runs both)
-└── dev.js              # Development runner script
+├── package.json         # Root scripts (runs both concurrently)
+└── README.md           # Main project documentation
 ```
 
 ---

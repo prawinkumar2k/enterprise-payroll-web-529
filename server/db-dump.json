@@ -1,0 +1,295 @@
+{
+  "monthYears": [
+    {
+      "MONTHYEAR": "02-2026"
+    },
+    {
+      "MONTHYEAR": "27"
+    },
+    {
+      "MONTHYEAR": "APR 2014"
+    },
+    {
+      "MONTHYEAR": "APR 2015"
+    },
+    {
+      "MONTHYEAR": "APR 2016"
+    },
+    {
+      "MONTHYEAR": "APR 2017"
+    },
+    {
+      "MONTHYEAR": "APR 2018"
+    },
+    {
+      "MONTHYEAR": "APR 2019"
+    },
+    {
+      "MONTHYEAR": "AUG 2014"
+    },
+    {
+      "MONTHYEAR": "AUG 2015"
+    },
+    {
+      "MONTHYEAR": "AUG 2016"
+    },
+    {
+      "MONTHYEAR": "AUG 2017"
+    },
+    {
+      "MONTHYEAR": "AUG 2018"
+    },
+    {
+      "MONTHYEAR": "AUG 2020"
+    },
+    {
+      "MONTHYEAR": "AUG 2026"
+    },
+    {
+      "MONTHYEAR": "DEC 1439"
+    },
+    {
+      "MONTHYEAR": "DEC 2013"
+    },
+    {
+      "MONTHYEAR": "DEC 2014"
+    },
+    {
+      "MONTHYEAR": "DEC 2015"
+    },
+    {
+      "MONTHYEAR": "DEC 2016"
+    },
+    {
+      "MONTHYEAR": "DEC 2017"
+    },
+    {
+      "MONTHYEAR": "DEC 2018"
+    },
+    {
+      "MONTHYEAR": "FEB 2014"
+    },
+    {
+      "MONTHYEAR": "FEB 2015"
+    },
+    {
+      "MONTHYEAR": "FEB 2016"
+    },
+    {
+      "MONTHYEAR": "FEB 2017"
+    },
+    {
+      "MONTHYEAR": "FEB 2018"
+    },
+    {
+      "MONTHYEAR": "FEB 2019"
+    },
+    {
+      "MONTHYEAR": "February-2026"
+    },
+    {
+      "MONTHYEAR": "JAN 2014"
+    },
+    {
+      "MONTHYEAR": "JAN 2015"
+    },
+    {
+      "MONTHYEAR": "JAN 2016"
+    },
+    {
+      "MONTHYEAR": "JAN 2017"
+    },
+    {
+      "MONTHYEAR": "JAN 2018"
+    },
+    {
+      "MONTHYEAR": "JAN 2019"
+    },
+    {
+      "MONTHYEAR": "JAN 2026"
+    },
+    {
+      "MONTHYEAR": "JUL 2014"
+    },
+    {
+      "MONTHYEAR": "JUL 2015"
+    },
+    {
+      "MONTHYEAR": "JUL 2016"
+    },
+    {
+      "MONTHYEAR": "JUL 2017"
+    },
+    {
+      "MONTHYEAR": "JUL 2018"
+    },
+    {
+      "MONTHYEAR": "JUL 2019"
+    },
+    {
+      "MONTHYEAR": "JUL 2026"
+    },
+    {
+      "MONTHYEAR": "JUN 2014"
+    },
+    {
+      "MONTHYEAR": "JUN 2015"
+    },
+    {
+      "MONTHYEAR": "JUN 2016"
+    },
+    {
+      "MONTHYEAR": "JUN 2017"
+    },
+    {
+      "MONTHYEAR": "JUN 2018"
+    },
+    {
+      "MONTHYEAR": "JUN 2019"
+    },
+    {
+      "MONTHYEAR": "JUN 2026"
+    },
+    {
+      "MONTHYEAR": "MAR 2014"
+    },
+    {
+      "MONTHYEAR": "MAR 2015"
+    },
+    {
+      "MONTHYEAR": "MAR 2016"
+    },
+    {
+      "MONTHYEAR": "MAR 2017"
+    },
+    {
+      "MONTHYEAR": "MAR 2018"
+    },
+    {
+      "MONTHYEAR": "MAR 2019"
+    },
+    {
+      "MONTHYEAR": "MAR 2026"
+    },
+    {
+      "MONTHYEAR": "MAY 2014"
+    },
+    {
+      "MONTHYEAR": "MAY 2015"
+    },
+    {
+      "MONTHYEAR": "MAY 2016"
+    },
+    {
+      "MONTHYEAR": "MAY 2017"
+    },
+    {
+      "MONTHYEAR": "MAY 2018"
+    },
+    {
+      "MONTHYEAR": "MAY 2019"
+    },
+    {
+      "MONTHYEAR": "MAY 2020"
+    },
+    {
+      "MONTHYEAR": "MAY 2026"
+    },
+    {
+      "MONTHYEAR": "NOV 2013"
+    },
+    {
+      "MONTHYEAR": "NOV 2014"
+    },
+    {
+      "MONTHYEAR": "NOV 2015"
+    },
+    {
+      "MONTHYEAR": "NOV 2016"
+    },
+    {
+      "MONTHYEAR": "NOV 2017"
+    },
+    {
+      "MONTHYEAR": "NOV 2018"
+    },
+    {
+      "MONTHYEAR": "OCT 2014"
+    },
+    {
+      "MONTHYEAR": "OCT 2015"
+    },
+    {
+      "MONTHYEAR": "OCT 2016"
+    },
+    {
+      "MONTHYEAR": "OCT 2017"
+    },
+    {
+      "MONTHYEAR": "OCT 2018"
+    },
+    {
+      "MONTHYEAR": "OCT 2026"
+    },
+    {
+      "MONTHYEAR": "SEP 2014"
+    },
+    {
+      "MONTHYEAR": "SEP 2015"
+    },
+    {
+      "MONTHYEAR": "SEP 2016"
+    },
+    {
+      "MONTHYEAR": "SEP 2017"
+    },
+    {
+      "MONTHYEAR": "SEP 2018"
+    },
+    {
+      "MONTHYEAR": "SEP 2026"
+    }
+  ],
+  "sample": {
+    "id": 1,
+    "MONTHYEAR": "APR 2014",
+    "EMPNO": "1",
+    "SNAME": "Dr.V.SUJATHA",
+    "Designation": "PRINCIPAL",
+    "DGroup": "0.0",
+    "NoofDays": "30",
+    "LeaveDays": "0.0",
+    "WorkingDays": "30.0",
+    "PAY": "34500",
+    "GradePay": "0",
+    "PHD": "0.0",
+    "MPHIL": "0.0",
+    "HATA": "nan",
+    "Allowance": "0.0",
+    "DA": "6900",
+    "SPECIAL": "3000.0",
+    "INTERIM": "2500.0",
+    "GROSSPAY": "46900.0",
+    "EPF": "780",
+    "ESI": "0",
+    "ESIM": "nan",
+    "IT": "0",
+    "PT": "0",
+    "Advance": "0",
+    "LIC": "0",
+    "RECOVERY": "0.0",
+    "OTHERS": "0",
+    "TOTDED": "780.0",
+    "NETSAL": "46120.0",
+    "AccountNo": "12621662782",
+    "BankName": null,
+    "IFSCCode": null,
+    "OtherAccNo": null,
+    "Remark": null,
+    "InterimPay": "2500",
+    "DAper": "201404.0",
+    "AbsGroup": "1.Teaching Staff",
+    "Bonus": "nan",
+    "CreatedAt": "2026-01-27T14:59:52.000Z"
+  }
+}

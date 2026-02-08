@@ -68,6 +68,10 @@ Open your browser to: **http://localhost:5175/login**
 ```
 enterprise-payroll-web-529/
 ├── client/                          # Frontend (React + Vite)
+│   ├── public/                     # Static assets
+│   ├── shared/                     # Shared frontend logic
+│   ├── netlify/                    # Cloud functions
+│   ├── deployment/                 # Nginx config
 │   ├── pages/
 │   │   └── Login.jsx               # ✅ Login page with API integration
 │   └── ...
@@ -80,10 +84,12 @@ enterprise-payroll-web-529/
 │   │   └── commonMiddleware.js     # ✅ Logging, error handling
 │   ├── routes/
 │   │   └── auth.js                 # ✅ Auth routes
+│   ├── scripts/                    # ✅ Database & maintenance scripts
 │   ├── db.js                       # ✅ MySQL connection pool
-│   └── index.js                    # ✅ Express server
+│   ├── index.js                    # ✅ Express server
+│   └── billing_db.sql              # ✅ Database dump
 │
-├── .env                            # Environment variables
+├── .env                            # Environment variables (optional in root)
 ├── AUTH_DOCUMENTATION.md           # Complete API documentation
 └── README.md                       # This file
 ```
