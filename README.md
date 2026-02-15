@@ -1,251 +1,82 @@
-# ✅ Authentication System - Ready to Use
+# 🚀 Enterprise-Grade Payroll & HRMS Ecosystem
 
-## 🎉 System Status: OPERATIONAL
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Stack: React + Node + Electron](https://img.shields.io/badge/Stack-React_|_Node_|_Electron-61DAFB?logo=react&logoColor=white)](https://reactjs.org/)
+[![Database: SQL-Adaptive](https://img.shields.io/badge/Database-MySQL_|_SQLite-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 
-### ✓ Server Running
-- **Backend**: http://localhost:5001
-- **Frontend**: http://localhost:5175
-- **Database**: billing_db (Connected)
+A high-precision, offline-first Enterprise Resource Planning (ERP) platform designed for large-scale workforce management and automated payroll disbursement. This system features a hybrid architecture allowing seamless transition between standalone desktop operation and cloud-synchronized enterprise deployments.
 
-### ✓ API Endpoints Verified
+---
 
-#### Health Check
+## 💎 Core Technical Achievements
+
+### 1. Hybrid Persistence Engine (Offline-First)
+Built a custom **Mode Manager** that allows the application to detect its environment. It uses **SQLite** for secure local desktop operation (isolated data) and scales to **MySQL/MariaDB** for cloud-based multi-tenant setups.
+
+### 2. High-Fidelity Payroll Print System
+Architected a sophisticated rendering engine in React that handles complex multidimensional data (Pay Bill Registers, Bank Statements, License Reports). Features include:
+*   **A4 Precision:** Exact pixel-perfect layout for official printing.
+*   **Screen Preview Simulation:** A professional "Page-View" mode with shadows and dynamic margins for user UI/UX.
+*   **Staged Rendering:** Progressive rendering for 100+ page reports to maintain 60FPS UI responsiveness.
+
+### 3. Commercial Security & Licensing
+Implemented a **Machine-Binding Hardware Fingerprint system** (`LicenseService`). 
+*   Generates unique IDs based on CPU and Disk serial numbers.
+*   Enforces tiered product levels (Trial, Pro, Enterprise).
+*   Protects revenue through offline activation tokens and tamper-resistant state files.
+
+### 4. Real-Time Analytics Dashboard
+A data-driven "Payroll Intelligence" hub using **Recharts**.
+*   **Dynamic KPIs:** Live workforce counts, net disbursement metrics, and statutory breakdowns (EPF, ESI, IT).
+*   **Audit Intelligence:** Real-time visibility into the system's internal audit logs.
+*   **Compliance Monitoring:** Automated alerts for missing statutory data or payroll discrepancies.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Tailwind CSS, Vite, Lucide-React, Recharts |
+| **Backend** | Node.js, Express, JWT, Zod Validation, Pino Logging |
+| **Desktop** | Electron, Electron-Builder (NSIS Installer), Auto-Updater |
+| **Database** | Knex.js, MySQL 8.0, SQLite 3 |
+| **DevOps** | Docker, Git, REST API Architecture |
+
+---
+
+## 📂 Architecture Overview
+
+```text
+├── client/              # React Dashboard & Reporting UI
+│   ├── components/      # UI Components (Custom Print Engine)
+│   ├── pages/           # Module Controllers (Attendance, Reports)
+│   └── lib/             # API Interceptors & Context Providers
+├── server/              # Enterprise Business Logic
+│   ├── services/        # Licensing, Sync, & Payroll Engines
+│   ├── controllers/     # API Endpoints
+│   └── database/        # Adaptive Persistence Layer
+└── electron/            # Desktop Shell & Main Process
+```
+
+---
+
+## 🚀 Installation & Deployment
+
+### For Developers
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Run in dev mode: `npm run electron:dev`
+
+### For Production
+Generate a production Windows installer:
 ```bash
-GET http://localhost:5001/api/health
-Response: {"success":true,"status":"ok","database":"connected"}
+npm run electron:build
 ```
-
-#### Login
-```bash
-POST http://localhost:5001/api/auth/login
-Body: {"email":"admin","password":"admin123"}
-Response: {
-  "success": true,
-  "message": "Login successful",
-  "token": "eyJhbGc...",
-  "user": {
-    "id": 1,
-    "username": "admin",
-    "name": "admin",
-    "role": "admin"
-  }
-}
-```
+The installer will be generated in `release/v1.0.0/`.
 
 ---
 
-## 🚀 Quick Start Guide
-
-### 1. Start the Application
-```bash
-npm run dev
-```
-This starts both:
-- Backend server on port 5001
-- Frontend Vite dev server on port 5175
-
-### 2. Access the Login Page
-Open your browser to: **http://localhost:5175/login**
-
-### 3. Test Login Credentials
-
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | admin |
-| prawin | prawin | admin |
-| gandhi | hr123 | hr_officer |
-| lathareddi | acc123 | accountant |
-
-### 4. After Login
-- Token is stored in `localStorage`
-- User is redirected to `/dashboard`
-- All subsequent API calls include the JWT token
-
----
-
-## 📁 Project Structure
-
-```
-enterprise-payroll-web-529/
-├── client/                          # Frontend (React + Vite)
-│   ├── public/                     # Static assets
-│   ├── shared/                     # Shared frontend logic
-│   ├── netlify/                    # Cloud functions
-│   ├── deployment/                 # Nginx config
-│   ├── pages/
-│   │   └── Login.jsx               # ✅ Login page with API integration
-│   └── ...
-│
-├── server/                          # Backend (Express)
-│   ├── controllers/
-│   │   └── authController.js       # ✅ Login, logout, getCurrentUser
-│   ├── middleware/
-│   │   ├── authMiddleware.js       # ✅ JWT verification & authorization
-│   │   └── commonMiddleware.js     # ✅ Logging, error handling
-│   ├── routes/
-│   │   └── auth.js                 # ✅ Auth routes
-│   ├── scripts/                    # ✅ Database & maintenance scripts
-│   ├── db.js                       # ✅ MySQL connection pool
-│   ├── index.js                    # ✅ Express server
-│   └── billing_db.sql              # ✅ Database dump
-│
-├── .env                            # Environment variables (optional in root)
-├── AUTH_DOCUMENTATION.md           # Complete API documentation
-└── README.md                       # This file
-```
-
----
-
-## 🔐 Authentication Flow
-
-```
-1. User enters credentials on Login page
-   ↓
-2. POST /api/auth/login
-   ↓
-3. Server validates against userdetails table
-   ↓
-4. JWT token generated and returned
-   ↓
-5. Token stored in localStorage
-   ↓
-6. User redirected to /dashboard
-   ↓
-7. All protected routes include: Authorization: Bearer <token>
-```
-
----
-
-## 🛠️ Available API Endpoints
-
-### Public Routes
-- `POST /api/auth/login` - User login
-
-### Protected Routes (Require JWT Token)
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout user
-
-### Utility Routes
-- `GET /api/health` - Health check
-
----
-
-## 🔧 Configuration
-
-### Environment Variables (.env)
-```env
-PORT=5001
-NODE_ENV=development
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=Prawin@2k4
-DB_NAME=billing_db
-JWT_SECRET=your_jwt_secret_key_change_in_production
-JWT_EXPIRES_IN=90d
-```
-
----
-
-## 📊 Database Tables Used
-
-### `userdetails`
-- Stores user credentials and profile
-- Supports both bcrypt and plain-text passwords (for migration)
-
-### `userlogs`
-- Tracks all login/logout activities
-- Includes timestamp, IP address, and action type
-
----
-
-## 🧪 Testing
-
-### Manual Testing
-1. Open http://localhost:5175/login
-2. Enter: `admin` / `admin123`
-3. Click "Sign In"
-4. Should redirect to /dashboard
-
-### API Testing (PowerShell)
-```powershell
-# Test login
-$body = @{email='admin';password='admin123'} | ConvertTo-Json
-Invoke-WebRequest -Uri http://localhost:5001/api/auth/login `
-  -Method POST -Body $body -ContentType 'application/json' `
-  -UseBasicParsing | Select-Object -ExpandProperty Content
-```
-
----
-
-## 🎯 Next Steps
-
-### Immediate
-- [x] Backend authentication system
-- [x] Frontend login integration
-- [x] JWT token management
-- [x] Activity logging
-- [x] Role-based access control
-
-### Future Enhancements
-- [ ] Password reset functionality
-- [ ] Email verification
-- [ ] Two-factor authentication (2FA)
-- [ ] Refresh token mechanism
-- [ ] Account lockout after failed attempts
-- [ ] Migrate all plain-text passwords to bcrypt
-
----
-
-## 📖 Documentation
-
-For complete API documentation, see: **AUTH_DOCUMENTATION.md**
-
----
-
-## ⚠️ Important Notes
-
-1. **Port Conflicts**: If you see "EADDRINUSE" error, stop all node processes:
-   ```powershell
-   Stop-Process -Name node -Force
-   npm run dev
-   ```
-
-2. **Database Connection**: Ensure MySQL is running and `billing_db` exists
-
-3. **CORS**: Already configured for local development
-
-4. **Security**: Change `JWT_SECRET` in production!
-
----
-
-## 🐛 Troubleshooting
-
-### Server won't start
-- Check if port 5001 is available
-- Verify MySQL is running
-- Check `.env` credentials
-
-### Login fails
-- Verify user exists in `userdetails` table
-- Check password (case-sensitive)
-- Look at server logs for errors
-
-### Token errors
-- Check if token is expired (90 days default)
-- Verify `JWT_SECRET` is consistent
-- Clear localStorage and login again
-
----
-
-## 📞 Support
-
-For issues or questions, check:
-1. Server logs (terminal running `npm run dev`)
-2. Browser console (F12)
-3. `AUTH_DOCUMENTATION.md` for detailed API info
-
----
-
-**Status**: ✅ Production Ready
-**Last Updated**: 2026-02-06
-**Version**: 1.0.0
+## 🤝 Contribution & License
+Developed and Engineered by **Prawin Kumar** for high-precision industrial use cases.
+License: MIT
