@@ -1,0 +1,6 @@
+.sidebar-scroll-fix {
+  height: 100vh;
+  overflow-y: auto;
+  min-width: 16rem;
+  max-width: 100vw;
+}

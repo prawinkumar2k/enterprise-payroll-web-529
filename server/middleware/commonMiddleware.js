@@ -13,38 +13,50 @@ export const requestLogger = (req, res, next) => {
  * Centralized error handling for the application
  */
 export const errorHandler = (err, req, res, next) => {
-    console.error('Error:', err);
+    const isDev = process.env.NODE_ENV === 'development';
 
-    // Mongoose validation error
-    if (err.name === 'ValidationError') {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation Error',
-            errors: Object.values(err.errors).map(e => e.message)
-        });
+    // Log error internally
+    if (isDev) {
+        console.error('[ErrorHandler] Error Trace:', err);
     }
 
-    // JWT errors
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid token'
-        });
-    }
-
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Token expired'
-        });
-    }
-
-    // Default error
-    res.status(err.statusCode || 500).json({
+    let statusCode = err.statusCode || 500;
+    let response = {
         success: false,
-        message: err.message || 'Internal Server Error',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
+        message: 'Internal System Error',
+        code: 'INTERNAL_ERROR'
+    };
+
+    // Database Specific Errors (MySQL/SQLite) - Sanitize
+    if (err.code === 'ER_DUP_ENTRY' || err.code === 'SQLITE_CONSTRAINT') {
+        statusCode = 409;
+        response.message = 'A record with this unique identifier already exists.';
+        response.code = 'DUPLICATE_ENTRY';
+    } else if (err.message.includes('System is currently syncing')) {
+        statusCode = 423;
+        response.message = 'System is temporarily locked for maintenance (Sync in progress).';
+        response.code = 'SYNC_LOCKED';
+    } else if (err.code === 'ER_LOCK_WAIT_TIMEOUT' || err.code === 'ER_LOCK_DEADLOCK') {
+        statusCode = 503;
+        response.message = 'Resource busy. Please try again.';
+        response.code = 'DATABASE_BUSY';
+    } else if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+        statusCode = 401;
+        response.message = err.name === 'TokenExpiredError' ? 'Session expired' : 'Invalid session';
+        response.code = err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN';
+    } else if (statusCode !== 500) {
+        // For known client errors (400, 404, etc)
+        response.message = err.message;
+        response.code = err.code || 'BAD_REQUEST';
+    }
+
+    // Add dev details if needed
+    if (isDev) {
+        response.details = err.message;
+        response.stack = err.stack;
+    }
+
+    res.status(statusCode).json(response);
 };
 
 /**

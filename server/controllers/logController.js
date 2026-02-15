@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import dbManager from '../database/dbManager.js';
 
 export const getLogs = async (req, res) => {
     try {
@@ -29,7 +29,7 @@ export const getLogs = async (req, res) => {
 
         query += ' ORDER BY LogDate DESC, LogTime DESC LIMIT 1000';
 
-        const [logs] = await pool.query(query, params);
+        const logs = await dbManager.query(query, params);
 
         res.json({ success: true, data: logs });
     } catch (error) {

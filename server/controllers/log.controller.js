@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import dbManager from '../database/dbManager.js';
 
 /**
  * Get Logs (Read-Only)
@@ -40,19 +40,14 @@ export const getLogs = async (req, res) => {
         // Sort by Latest First (LogDate DESC, LogTime DESC)
         query += ' ORDER BY LogDate DESC, LogTime DESC LIMIT 1000';
 
-        const [logs] = await pool.query(query, params);
+        const [logs] = await dbManager.query(query, params);
 
         res.json({
             success: true,
             data: logs,
-            count: logs.length
+            count: logs ? logs.length : 0
         });
 
-        // Optional: Log that someone viewed the logs? 
-        // "User viewed logs" -> recursive logging risk if filters trigger it.
-        // But prompt described "User viewed payroll report".
-        // Usually viewing audit logs is also audited.
-        // I'll skip auto-logging the View action to avoid noise unless specifically requested.
     } catch (error) {
         console.error('Fetch Logs Error:', error);
         res.status(500).json({ success: false, message: error.message });

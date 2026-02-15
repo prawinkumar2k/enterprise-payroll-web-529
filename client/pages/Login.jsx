@@ -1,8 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { useSettings } from "../context/SettingsContext";
 
 export default function Login() {
+  const { settings } = useSettings();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -10,6 +12,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const orgName = settings.org_name || "Enterprise Payroll";
+  const orgLogo = settings.org_logo_url;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +37,7 @@ export default function Login() {
       }
 
       // Login successful
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
       navigate('/dashboard');
@@ -43,20 +48,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-indigo-700 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-10">
-          <Link to="/" className="inline-flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-primary-900 font-bold text-2xl">S</span>
-            </div>
-            <span className="text-white text-2xl font-bold">SearchFirst Payroll System</span>
+          <Link to="/" className="inline-flex flex-col items-center gap-3 mb-8">
+            {orgLogo ? (
+              <img src={orgLogo} className="w-16 h-16 object-contain bg-white p-2 rounded-xl shadow-lg" alt="Logo" />
+            ) : (
+              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-indigo-900 font-black text-3xl">{orgName.charAt(0)}</span>
+              </div>
+            )}
+            <h1 className="text-white text-2xl font-black mt-2 tracking-tight uppercase">{orgName}</h1>
           </Link>
-          <h1 className="text-white text-3xl font-bold">Welcome Back</h1>
-          <p className="text-primary-100 mt-2">
-            Sign in to your SearchFirst Payroll account
-          </p>
+          <div className="space-y-1">
+            <h2 className="text-white/90 text-xl font-bold">Secure Access Portal</h2>
+            <p className="text-indigo-100/70 text-sm font-medium">Verify your credentials to continue</p>
+          </div>
         </div>
 
         {/* Form Card */}

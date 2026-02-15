@@ -1,6 +1,10 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useSettings } from "../context/SettingsContext";
+import { useSync, SYNC_MODES } from "../context/SyncContext";
 import {
+  Settings,
   Menu,
   X,
   LogOut,
@@ -11,15 +15,15 @@ import {
   Home,
   ChevronDown,
   Bell,
-  User
-} from
-  "lucide-react";
-
-
-
-
-
-
+  User,
+  Calendar,
+  BarChart3,
+  RefreshCw,
+  Cloud,
+  CloudOff,
+  Database,
+  AlertCircle
+} from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -27,12 +31,50 @@ export default function DashboardLayout({
   userRole = "Admin",
   disableContentWrapper = false
 }) {
+  const { isEnabled, settings } = useSettings();
+  const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync, error } = useSync();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [betaStatus, setBetaStatus] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
+  useEffect(() => {
+    fetch('/api/beta/status', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => setBetaStatus(data))
+      .catch(() => { });
+  }, []);
+
+  const handleExportDiagnostics = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/beta/diagnostics/export', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Diagnostic package exported to Desktop: ${data.fileName}`);
+      } else {
+        alert('Failed to export diagnostics: ' + data.message);
+      }
+    } catch (e) {
+      alert('Network error during diagnostic export.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // DYNAMIC MENU ITEMS GENERATOR
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
     {
@@ -47,32 +89,48 @@ export default function DashboardLayout({
     { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
     { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
     {
+      id: "attendance",
+      label: "ATTENDANCE",
+      icon: Calendar,
+      feature: 'enable_attendance',
+      subItems: [
+        { id: "attendance-daily", label: "Daily Attendance", href: "/attendance/daily" },
+        { id: "attendance-monthly", label: "Monthly Attendance", href: "/attendance/monthly" },
+        { id: "attendance-reports", label: "Attendance Reports", href: "/attendance/reports" }
+      ]
+    },
+    {
       id: "reports",
       label: "REPORTS",
       icon: ScrollText,
       subItems: [
-        { id: "pay-bill", label: "Pay Bill Detail", href: "/reports/pay-bill" }
+        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
+        { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
+        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
+        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
+        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
+        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
+        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
       ]
-    }];
-
-  const filteredMenuItems = menuItems.filter((item) => {
-    if (userRole === "Employee") return item.id === "dashboard";
-    if (userRole === "Auditor") return ["dashboard", "files"].includes(item.id);
-    return true;
-  });
+    },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "license", label: "Licensing", icon: Database, href: "/license" },
+    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" }
+  ];
 
   const NavContent = () => (
     <nav className="flex-1 px-4 py-6 overflow-y-auto">
       <ul className="space-y-2">
-        {filteredMenuItems.map((item) => {
+        {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeRoute === item.id || (item.subItems?.some(s => s.id === activeRoute));
 
           if (item.subItems) {
-            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : false);
+            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : false));
             const toggleOpen = () => {
               if (item.id === 'files') setFilesOpen(!filesOpen);
               if (item.id === 'reports') setReportsOpen(!reportsOpen);
+              if (item.id === 'attendance') setAttendanceOpen(!attendanceOpen);
             };
 
             return (
@@ -131,148 +189,169 @@ export default function DashboardLayout({
   );
 
   return (
-    <div
-      className={`h-screen bg-background overflow-hidden transition-all duration-300 grid ${
-        // Grid Template:
-        // Mobile: 1 column (sidebar absolute)
-        // Desktop: 2 columns (sidebar width defined by state)
-        window.innerWidth < 1024
-          ? "grid-cols-1"
-          : sidebarOpen
-            ? "grid-cols-[16rem_1fr]"
-            : "grid-cols-[5rem_1fr]"
-        }`}
-    >
-      {/* Mobile Sidebar Overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Grid Area 1 (Row spanning) */}
-      <aside
-        className={`bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300
-          ${mobileSidebarOpen ? "fixed inset-y-0 left-0 z-50 w-64 translate-x-0" : "hidden lg:flex relative"}
-          ${!mobileSidebarOpen && "h-full"}
-          lg:col-start-1 lg:row-span-2
-        `}
-      >
-
-        {/* Logo Section */}
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      {/* 1. Desktop Sidebar */}
+      <aside className={`bg-sidebar border-r border-sidebar-border flex flex-col h-full transition-all duration-300 flex-shrink-0 hidden lg:flex ${sidebarOpen ? "w-64" : "w-20"}`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border flex-shrink-0">
-          {(sidebarOpen || mobileSidebarOpen) ? (
+          {sidebarOpen ? (
             <Link to="/" className="flex items-center gap-3">
               <div className="w-8 h-8 bg-sidebar-primary rounded flex items-center justify-center flex-shrink-0">
                 <span className="text-sidebar-primary-foreground font-bold">S</span>
               </div>
-              <span className="font-bold text-sidebar-foreground truncate">SearchFirst Payroll</span>
+              <span className="font-bold text-sidebar-foreground truncate tracking-tight">{settings.org_name || "Enterprise Payroll"}</span>
             </Link>
           ) : (
             <Link to="/" className="flex items-center justify-center w-full">
               <div className="w-8 h-8 bg-sidebar-primary rounded flex items-center justify-center">
-                <span className="text-sidebar-primary-foreground font-bold">S</span>
+                <span className="text-sidebar-primary-foreground font-bold">P</span>
               </div>
             </Link>
           )}
-          <button
-            onClick={() => {
-              if (window.innerWidth < 1024) setMobileSidebarOpen(false);
-              else setSidebarOpen(!sidebarOpen);
-            }}
-            className="p-1 hover:bg-sidebar-accent rounded transition lg:hidden"
-          >
-            <X className="w-5 h-5 text-sidebar-foreground" />
-          </button>
         </div>
 
         <NavContent />
 
-        {/* User Info Footer (Sidebar) */}
-        {(sidebarOpen || mobileSidebarOpen) && (
-          <div className="p-4 border-t border-sidebar-border mt-auto">
-            <div className="bg-sidebar-accent rounded-lg p-3">
-              <p className="text-[10px] uppercase font-bold text-sidebar-foreground/50 mb-1 leading-none">Role</p>
-              <p className="text-sm text-sidebar-foreground font-semibold truncate">{userRole}</p>
+        {sidebarOpen && (
+          <div className="p-4 border-t border-sidebar-border mt-auto space-y-3">
+            <div className={`rounded-xl p-3 border transition-all duration-300 ${isSyncing
+              ? 'bg-blue-500/10 border-blue-500/20'
+              : mode === SYNC_MODES.OFFLINE
+                ? 'bg-orange-500/10 border-orange-500/20'
+                : 'bg-green-500/10 border-green-500/20'
+              }`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] uppercase font-bold text-foreground/40 leading-none">System Status</p>
+                {mode === SYNC_MODES.ONLINE && <Cloud className="w-3 h-3 text-green-500" />}
+                {mode === SYNC_MODES.OFFLINE && <CloudOff className="w-3 h-3 text-orange-500" />}
+                {isSyncing && <RefreshCw className="w-3 h-3 text-blue-500 animate-spin" />}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-blue-500 animate-pulse' : mode === SYNC_MODES.OFFLINE ? 'bg-orange-500' : 'bg-green-500'}`} />
+                <p className="text-sm font-bold text-foreground capitalize truncate">{isSyncing ? 'Syncing...' : (mode ? mode.toLowerCase() : 'Offline')}</p>
+              </div>
+
+              {pendingCount > 0 && !isSyncing && (
+                <p className="text-[10px] text-orange-500 font-bold mt-2">
+                  {pendingCount} changes pending
+                </p>
+              )}
+
+              {lastSync && (
+                <p className="text-[10px] text-foreground/60 mt-1 font-medium">
+                  Last Sync: {new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+            </div>
+
+            <button
+              disabled={isSyncing}
+              onClick={triggerManualSync}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-bold hover:opacity-90 disabled:opacity-50 transition"
+            >
+              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+              Sync Now
+            </button>
+
+            {/* SYSTEM INFO */}
+            <div className="pt-2 border-t border-sidebar-border/50">
+              <div className="flex flex-col gap-1 px-1 mb-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest">Product Status</span>
+                  {betaStatus?.license?.includes('Trial') ? (
+                    <span className="text-[9px] font-black text-orange-500 uppercase">Trial Mode</span>
+                  ) : (
+                    <span className="text-[9px] font-black text-green-500 uppercase">Full Access</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-black text-foreground/40 uppercase tracking-tighter text-center w-full">v1.0.0 Stable</span>
+              </div>
+              <button
+                onClick={handleExportDiagnostics}
+                disabled={exporting}
+                className="w-full mt-2 text-[9px] font-bold text-foreground/30 hover:text-primary uppercase tracking-widest text-left px-1 transition-colors flex items-center gap-1.5"
+              >
+                <div className={`w-1 h-1 rounded-full ${exporting ? 'bg-primary animate-ping' : 'bg-foreground/10'}`} />
+                {exporting ? 'Packaging...' : 'System Diagnostics'}
+              </button>
             </div>
           </div>
         )}
       </aside>
 
-      {/* Content Area Wrapper - Grid Column 2 */}
-      <div className="flex flex-col h-screen overflow-hidden lg:col-start-2">
-
-        {/* Header */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0 z-30">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="p-2 hover:bg-secondary rounded-lg transition lg:hidden"
-            >
-              <Menu className="w-6 h-6 text-foreground" />
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-secondary rounded-lg transition">
+              <Menu className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:block p-2 hover:bg-secondary rounded-lg transition"
-            >
-              <Menu className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">
-              {filteredMenuItems.find(m => m.id === activeRoute || m.subItems?.some(s => s.id === activeRoute))?.label || "Dashboard"}
-            </h1>
+            <h1 className="text-lg font-bold">Payroll Engine</h1>
           </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button className="hidden sm:flex p-2 hover:bg-secondary rounded-lg transition relative">
-              <Bell className="w-5 h-5 text-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-card"></span>
-            </button>
-
-            <div className="relative">
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 hover:bg-secondary rounded-lg transition group"
-              >
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                  <User className="w-4 h-4 text-primary" />
-                </div>
-                <span className="hidden sm:inline text-sm font-medium text-foreground">Admin</span>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-[60]">
-                  <div className="px-4 py-3 border-b border-border sm:hidden">
-                    <p className="text-xs font-bold text-muted-foreground uppercase">Role: {userRole}</p>
-                  </div>
-                  <button className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-secondary transition flex items-center gap-2">
-                    <User className="w-4 h-4" /> Profile
-                  </button>
-                  <div className="border-t border-border"></div>
-                  <Link
-                    to="/login"
-                    className="w-full px-4 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10 transition flex items-center gap-2 font-medium"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </Link>
-                </div>
-              )}
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="w-4 h-4 text-primary" />
             </div>
           </div>
         </header>
 
-        {/* Main Content - Scrollable or Fixed */}
-        <main className={`flex-1 w-full bg-background ${disableContentWrapper ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'}`}>
-          {disableContentWrapper ? (
-            children
-          ) : (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-              {children}
+        <main className="flex-1 w-full bg-background overflow-y-auto overflow-x-hidden relative px-4 sm:px-8 py-8">
+          {betaStatus?.safeMode && (
+            <div className="bg-slate-800 text-white px-6 py-2 flex items-center justify-between sticky top-0 z-40 shadow-lg border-b border-primary/20">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-orange-400" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-tighter">System Recovery Engine Active</p>
+                  <p className="text-[10px] opacity-80 font-medium tracking-tight">System is operating in a restricted safe state. Background sync and intensive jobs are throttled.</p>
+                </div>
+              </div>
+              <button
+                onClick={handleExportDiagnostics}
+                className="bg-primary/20 hover:bg-primary/40 text-primary text-[10px] font-bold px-3 py-1 rounded-lg border border-primary/30 transition-all uppercase"
+              >
+                Export System Logs
+              </button>
             </div>
           )}
+          {children}
         </main>
       </div>
+
+      {/* Sync Blocking Overlay */}
+      {isSyncing && (
+        <div className="fixed inset-0 bg-background/40 backdrop-blur-[4px] z-[9999] flex flex-col items-center justify-center cursor-wait transition-all duration-500">
+          <div className="bg-card/95 border border-border p-10 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col items-center gap-6 max-w-sm text-center border-t-primary/20 scale-100 animate-in fade-in zoom-in duration-300">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+              <RefreshCw className="w-16 h-16 text-primary animate-spin relative z-10" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Synchronizing</h3>
+              <p className="text-sm text-muted-foreground font-medium px-4">
+                Pushing your local changes to the cloud authority. Please do not close the application.
+              </p>
+            </div>
+
+            <div className="w-full space-y-2 px-4">
+              <div className="flex justify-between text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+                <span>{progress.stage || 'Preparing'}</span>
+                <span>{progress.percent}%</span>
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500 ease-out"
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground font-bold">
+                {progress.current} / {progress.total} Records Processed
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

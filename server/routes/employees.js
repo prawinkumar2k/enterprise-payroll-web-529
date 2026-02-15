@@ -7,8 +7,13 @@ import {
     getTrashedEmployees,
     restoreEmployee
 } from '../controllers/employeeController.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// All routes are protected and restricted to admin/HR
+router.use(authenticate);
+router.use(authorize('admin', 'hr_officer'));
 
 router.get('/', getEmployees);
 router.get('/trash', getTrashedEmployees);

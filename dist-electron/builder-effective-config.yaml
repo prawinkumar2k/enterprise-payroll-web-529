@@ -1,0 +1,15 @@
+directories:
+  output: dist-electron
+  buildResources: build
+appId: com.enterprise.payroll
+productName: Enterprise Payroll System
+files:
+  - filter:
+      - client/dist/**/*
+      - server/**/*
+      - electron/**/*
+      - package.json
+      - .env.desktop
+win:
+  target: nsis
+electronVersion: 28.3.3

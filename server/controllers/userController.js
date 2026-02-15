@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import dbManager from '../database/dbManager.js';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
  */
 export const getUsers = async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT * FROM userdetails ORDER BY CreatedAt DESC');
+        const [users] = await dbManager.query('SELECT * FROM userdetails ORDER BY created_at DESC');
 
         // Remove passwords from response
         const safeUsers = users.map(u => {
@@ -32,7 +32,7 @@ export const createUser = async (req, res) => {
 
     try {
         // Check if user exists
-        const [existing] = await pool.query('SELECT id FROM userdetails WHERE UserID = ?', [UserID]);
+        const [existing] = await dbManager.query('SELECT id FROM userdetails WHERE UserID = ?', [UserID]);
         if (existing.length > 0) {
             return res.status(409).json({ success: false, message: 'UserID already exists' });
         }
@@ -40,9 +40,9 @@ export const createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(Password, 10);
         const now = new Date();
 
-        const [result] = await pool.query(
+        const result = await dbManager.execute(
             `INSERT INTO userdetails 
-            (UserID, Password, UserName, Qualification, Department, Role, Contact, Remark, CreatedAt, UpdatedAt)
+            (UserID, Password, UserName, Qualification, Department, Role, Contact, Remark, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [UserID, hashedPassword, UserName, Qualification, Department, Role, Contact, Remark, now, now]
         );
@@ -66,7 +66,7 @@ export const updateUser = async (req, res) => {
     const { UserID, Password, UserName, Qualification, Department, Role, Contact, Remark } = req.body;
 
     try {
-        const [current] = await pool.query('SELECT * FROM userdetails WHERE id = ?', [id]);
+        const [current] = await dbManager.query('SELECT * FROM userdetails WHERE id = ?', [id]);
         if (current.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
         let finalPassword = current[0].Password;
@@ -76,9 +76,9 @@ export const updateUser = async (req, res) => {
 
         const now = new Date();
 
-        await pool.query(
+        await dbManager.execute(
             `UPDATE userdetails SET 
-            UserID=?, Password=?, UserName=?, Qualification=?, Department=?, Role=?, Contact=?, Remark=?, UpdatedAt=?
+            UserID=?, Password=?, UserName=?, Qualification=?, Department=?, Role=?, Contact=?, Remark=?, updated_at=?
             WHERE id=?`,
             [UserID, finalPassword, UserName, Qualification, Department, Role, Contact, Remark, now, id]
         );
@@ -100,10 +100,10 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
-        const [user] = await pool.query('SELECT UserID FROM userdetails WHERE id = ?', [id]);
+        const [user] = await dbManager.query('SELECT UserID FROM userdetails WHERE id = ?', [id]);
         if (user.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
-        await pool.query('DELETE FROM userdetails WHERE id = ?', [id]);
+        await dbManager.execute('DELETE FROM userdetails WHERE id = ?', [id]);
 
         // Enterprise Audit Log
         if (req.audit) {

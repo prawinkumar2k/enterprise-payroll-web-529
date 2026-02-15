@@ -1,9 +1,12 @@
-import pool from '../db.js';
-import { logAction } from '../middleware/log.middleware.js';
+import dbManager from '../database/dbManager.js';
+import { logAudit } from '../utils/auditLogger.js';
+import { randomUUID } from 'crypto';
+import metricsService from '../services/metrics.service.js';
+import licenseService from '../services/license.service.js';
 
 /**
  * Salary Controller
- * Handles Salary Generation, View, Update, and Bonus
+ * Handels Salary Generation, View, Update, and Bonus
  */
 
 // Helper to calculate totals
@@ -38,13 +41,23 @@ export const generateSalary = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Month and Year required' });
     }
 
-    const connection = await pool.getConnection();
+    // --- COMMERCIAL COMPLIANCE CHECK ---
+    const limits = await licenseService.getProductLimits();
+    if (limits.isExpired) {
+        return res.status(403).json({
+            success: false,
+            message: 'Your product trial has expired. Please activate your license to continue generating payroll.',
+            isExpired: true
+        });
+    }
+
+    const connection = await dbManager.getConnection();
     try {
         await connection.beginTransaction();
 
-        // Check if already generated
+        // 1. Check if already generated (with row lock for safety)
         const [existing] = await connection.query(
-            'SELECT id FROM emppay WHERE MONTHYEAR = ? LIMIT 1',
+            'SELECT id FROM emppay WHERE MONTHYEAR = ? LIMIT 1 FOR UPDATE',
             [monthYear]
         );
 
@@ -56,12 +69,12 @@ export const generateSalary = async (req, res) => {
             });
         }
 
-        // Fetch all employees
-        const [employees] = await connection.query('SELECT * FROM empdet');
+        // 2. Fetch all employees (Lock rows to prevent modification during calculation)
+        const [employees] = await connection.query('SELECT * FROM empdet WHERE CheckStatus IN ("Active", "True") OR CheckStatus IS NULL FOR UPDATE');
 
         if (employees.length === 0) {
             await connection.rollback();
-            return res.status(404).json({ success: false, message: 'No employees found in system.' });
+            return res.status(404).json({ success: false, message: 'No active employees found in system.' });
         }
 
         const dateParts = monthYear.split('-');
@@ -70,20 +83,22 @@ export const generateSalary = async (req, res) => {
         const monthNum = parseInt(queryMonth);
         const yearNum = parseInt(queryYear);
         const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+        const datePrefix = `${queryYear}-${queryMonth}-%`;
 
+        // Bulk Fetch Attendance counts for all employees
+        const [attRows] = await connection.query(
+            `SELECT EMPNO, COUNT(*) as leaves FROM staffattendance 
+             WHERE ADATE LIKE ? AND (AttType = "Leave" OR LOP = "Yes" OR \`Leave\` > 0)
+             GROUP BY EMPNO`,
+            [datePrefix]
+        );
+        const leaveMap = new Map(attRows.map(r => [r.EMPNO, r.leaves]));
+
+        const salaryRows = [];
         for (const emp of employees) {
-            // Count LOP/Leave from staffattendance
-            // Format for ADATE search: 'YYYY-MM-%'
-            const datePrefix = `${queryYear}-${queryMonth}-%`;
-            const [attRows] = await connection.query(
-                'SELECT COUNT(*) as leaves FROM staffattendance WHERE EMPNO = ? AND ADATE LIKE ? AND (AttType = "Leave" OR LOP = "Yes" OR `Leave` > 0)',
-                [emp.EMPNO, datePrefix]
-            );
-
-            const leaveDays = attRows[0].leaves || 0;
+            const leaveDays = leaveMap.get(emp.EMPNO) || 0;
             const workingDays = daysInMonth - leaveDays;
 
-            // Initial calculation
             const baseRow = {
                 ...emp,
                 MONTHYEAR: monthYear,
@@ -91,7 +106,7 @@ export const generateSalary = async (req, res) => {
                 LeaveDays: leaveDays.toString(),
                 WorkingDays: workingDays.toString(),
                 Bonus: '0',
-                ESIM: '0', // Default ESIM if not in empdet
+                ESIM: '0',
                 IT: '0',
                 PT: '0',
                 Advance: '0',
@@ -104,41 +119,48 @@ export const generateSalary = async (req, res) => {
             };
 
             const totals = calculateSalaryTotals(baseRow);
+            salaryRows.push([
+                randomUUID(), monthYear, emp.EMPNO, emp.SNAME, emp.DESIGNATION, emp.DGroup,
+                baseRow.NoofDays, baseRow.LeaveDays, baseRow.WorkingDays,
+                emp.PAY, emp.GradePay, emp.PHD, emp.MPHIL, emp.HATA, emp.Allowance, emp.DA, emp.SPECIAL, emp.INTERIM,
+                totals.GROSSPAY, emp.EPF, emp.ESI, baseRow.ESIM, baseRow.IT, baseRow.PT, baseRow.Advance, baseRow.LIC, baseRow.RECOVERY, baseRow.OTHERS,
+                totals.TOTDED, totals.NETSAL, emp.AccountNo, emp.BankName, emp.IFSCCode, emp.OtherAccNo,
+                baseRow.Remark, baseRow.InterimPay, baseRow.DAper, emp.AbsGroup, baseRow.Bonus, 'SERVER_01', 0
+            ]);
+        }
 
-            await connection.query(
-                `INSERT INTO emppay (
-                    MONTHYEAR, EMPNO, SNAME, Designation, DGroup,
-                    NoofDays, LeaveDays, WorkingDays,
-                    PAY, GradePay, PHD, MPHIL, HATA, Allowance, DA, SPECIAL, INTERIM,
-                    GROSSPAY, EPF, ESI, ESIM, IT, PT, Advance, LIC, RECOVERY, OTHERS,
-                    TOTDED, NETSAL, AccountNo, BankName, IFSCCode, OtherAccNo,
-                    Remark, InterimPay, DAper, AbsGroup, Bonus
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    monthYear, emp.EMPNO, emp.SNAME, emp.DESIGNATION, emp.DGroup,
-                    baseRow.NoofDays, baseRow.LeaveDays, baseRow.WorkingDays,
-                    emp.PAY, emp.GradePay, emp.PHD, emp.MPHIL, emp.HATA, emp.Allowance, emp.DA, emp.SPECIAL, emp.INTERIM,
-                    totals.GROSSPAY, emp.EPF, emp.ESI, baseRow.ESIM, baseRow.IT, baseRow.PT, baseRow.Advance, baseRow.LIC, baseRow.RECOVERY, baseRow.OTHERS,
-                    totals.TOTDED, totals.NETSAL, emp.AccountNo, emp.BankName, emp.IFSCCode, emp.OtherAccNo,
-                    baseRow.Remark, baseRow.InterimPay, baseRow.DAper, emp.AbsGroup, baseRow.Bonus
-                ]
-            );
+        if (salaryRows.length > 0) {
+            const fields = [
+                'uuid', 'MONTHYEAR', 'EMPNO', 'SNAME', 'Designation', 'DGroup',
+                'NoofDays', 'LeaveDays', 'WorkingDays',
+                'PAY', 'GradePay', 'PHD', 'MPHIL', 'HATA', 'Allowance', 'DA', 'SPECIAL', 'INTERIM',
+                'GROSSPAY', 'EPF', 'ESI', 'ESIM', 'IT', 'PT', 'Advance', 'LIC', 'RECOVERY', 'OTHERS',
+                'TOTDED', 'NETSAL', 'AccountNo', 'BankName', 'IFSCCode', 'OtherAccNo',
+                'Remark', 'InterimPay', 'DAper', 'AbsGroup', 'Bonus', 'device_id', 'is_synced'
+            ];
+            const placeholders = salaryRows.map(() => `(${fields.map(() => '?').join(',')})`).join(',');
+            const sql = `INSERT INTO emppay (${fields.map(f => `\`${f}\``).join(',')}) VALUES ${placeholders}`;
+            await connection.query(sql, salaryRows.flat());
         }
 
         await connection.commit();
 
-        // Log success
-        await logAction({
+        // 3. Audit Logging
+        await logAudit({
             userId: user.username,
             username: user.name || user.username,
-            role: user.role,
-            module: 'SALARY',
-            actionType: 'GENERATE',
+            actionType: 'GENERATE_SALARY',
+            module: 'PAYROLL',
             description: `Generated salary for ${monthYear} for ${employees.length} employees`,
-            ip: req.socket.remoteAddress
+            newValue: { monthYear, count: employees.length },
+            ip: req.socket.remoteAddress,
+            connection: connection
         });
 
-        res.json({ success: true, message: `Salary generated successfully for ${monthYear}` });
+        // 5. Beta Usage Tracking
+        metricsService.recordUsage('payroll_generations');
+
+        res.status(201).json({ success: true, message: `Salary generated for ${employees.length} employees.` });
 
     } catch (error) {
         await connection.rollback();
@@ -152,29 +174,16 @@ export const generateSalary = async (req, res) => {
 // 2. View Salary
 export const getSalary = async (req, res) => {
     const { monthYear } = req.query;
-    const user = req.user;
 
     if (!monthYear) {
         return res.status(400).json({ success: false, message: 'Month and Year required' });
     }
 
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM emppay WHERE MONTHYEAR = ? ORDER BY id ASC',
+        const [rows] = await dbManager.query(
+            'SELECT * FROM emppay WHERE MONTHYEAR = ? AND deleted_at IS NULL ORDER BY id ASC',
             [monthYear]
         );
-
-        // Log view action
-        await logAction({
-            userId: user.username,
-            username: user.name || user.username,
-            role: user.role,
-            module: 'SALARY',
-            actionType: 'VIEW',
-            description: `Viewed salary list for ${monthYear}`,
-            ip: req.socket.remoteAddress
-        });
-
         res.json({ success: true, data: rows });
     } catch (error) {
         console.error('View Salary Error:', error);
@@ -188,24 +197,31 @@ export const updateSalaryRow = async (req, res) => {
     const updateData = req.body;
     const user = req.user;
 
+    const connection = await dbManager.getConnection();
     try {
-        // Fetch existing row
-        const [existing] = await pool.query('SELECT * FROM emppay WHERE id = ?', [id]);
+        await connection.beginTransaction();
+
+        // 1. Fetch existing row (Lock for update)
+        const [existing] = await connection.query('SELECT * FROM emppay WHERE id = ? FOR UPDATE', [id]);
         if (existing.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'Salary record not found' });
         }
 
-        const currentRow = { ...existing[0], ...updateData };
+        const oldRow = { ...existing[0] };
+        const currentRow = { ...oldRow, ...updateData };
 
-        // Ensure EMPNO and MONTHYEAR aren't changed via body (as per requirements)
-        currentRow.EMPNO = existing[0].EMPNO;
-        currentRow.MONTHYEAR = existing[0].MONTHYEAR;
+        // Constraints
+        currentRow.EMPNO = oldRow.EMPNO;
+        currentRow.MONTHYEAR = oldRow.MONTHYEAR;
 
         // Recalculate totals
         const totals = calculateSalaryTotals(currentRow);
         currentRow.GROSSPAY = totals.GROSSPAY;
         currentRow.TOTDED = totals.TOTDED;
         currentRow.NETSAL = totals.NETSAL;
+        currentRow.updated_at = new Date();
+        currentRow.is_synced = 0; // Mark as dirty for sync
 
         // Update DB
         const fields = [
@@ -213,33 +229,39 @@ export const updateSalaryRow = async (req, res) => {
             'PAY', 'GradePay', 'PHD', 'MPHIL', 'HATA', 'Allowance', 'DA', 'SPECIAL', 'INTERIM',
             'GROSSPAY', 'EPF', 'ESI', 'ESIM', 'IT', 'PT', 'Advance', 'LIC', 'RECOVERY', 'OTHERS',
             'TOTDED', 'NETSAL', 'AccountNo', 'BankName', 'IFSCCode', 'OtherAccNo',
-            'Remark', 'InterimPay', 'DAper', 'AbsGroup', 'Bonus'
+            'Remark', 'InterimPay', 'DAper', 'AbsGroup', 'Bonus', 'is_synced', 'updated_at'
         ];
 
         const values = fields.map(f => currentRow[f]);
-        const setClause = fields.map(f => `${f} = ?`).join(', ');
+        const setClause = fields.map(f => `\`${f}\` = ?`).join(', ');
 
-        await pool.query(
+        await connection.query(
             `UPDATE emppay SET ${setClause} WHERE id = ?`,
             [...values, id]
         );
 
-        // Log action
-        await logAction({
+        await connection.commit();
+
+        // 2. Audit Logging
+        await logAudit({
             userId: user.username,
             username: user.name || user.username,
-            role: user.role,
-            module: 'SALARY',
-            actionType: 'UPDATE',
+            actionType: 'UPDATE_SALARY',
+            module: 'PAYROLL',
             description: `Updated salary record for ${currentRow.EMPNO} (${currentRow.MONTHYEAR})`,
+            oldValue: oldRow,
+            newValue: currentRow,
             ip: req.socket.remoteAddress
         });
 
         res.json({ success: true, message: 'Salary updated successfully', data: currentRow });
 
     } catch (error) {
+        await connection.rollback();
         console.error('Update Salary Error:', error);
         res.status(500).json({ success: false, message: 'Server error updating record' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -252,12 +274,12 @@ export const applyBonus = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Month-Year and Bonus Amount required' });
     }
 
-    const connection = await pool.getConnection();
+    const connection = await dbManager.getConnection();
     try {
         await connection.beginTransaction();
 
         const [rows] = await connection.query(
-            'SELECT * FROM emppay WHERE MONTHYEAR = ?',
+            'SELECT * FROM emppay WHERE MONTHYEAR = ? FOR UPDATE',
             [monthYear]
         );
 
@@ -271,21 +293,21 @@ export const applyBonus = async (req, res) => {
             const totals = calculateSalaryTotals(updatedRow);
 
             await connection.query(
-                'UPDATE emppay SET Bonus = ?, GROSSPAY = ?, NETSAL = ? WHERE id = ?',
+                'UPDATE emppay SET Bonus = ?, GROSSPAY = ?, NETSAL = ?, is_synced = 0 WHERE id = ?',
                 [updatedRow.Bonus, totals.GROSSPAY, totals.NETSAL, row.id]
             );
         }
 
         await connection.commit();
 
-        // Log action
-        await logAction({
+        // Audit Logging
+        await logAudit({
             userId: user.username,
             username: user.name || user.username,
-            role: user.role,
-            module: 'SALARY',
-            actionType: 'BONUS',
+            actionType: 'APPLY_BONUS',
+            module: 'PAYROLL',
             description: `Applied bonus of ${bonusAmount} to all employees for ${monthYear}`,
+            newValue: { monthYear, bonusAmount },
             ip: req.socket.remoteAddress
         });
 
@@ -295,6 +317,75 @@ export const applyBonus = async (req, res) => {
         await connection.rollback();
         console.error('Apply Bonus Error:', error);
         res.status(500).json({ success: false, message: 'Server error applying bonus' });
+    } finally {
+        connection.release();
+    }
+};
+// 5. Reverse Salary (Safety Feature)
+export const reverseSalary = async (req, res) => {
+    const { monthYear, reason } = req.body;
+    const user = req.user;
+
+    if (!monthYear) {
+        return res.status(400).json({ success: false, message: 'Month-Year required for reversal' });
+    }
+
+    if (user.role !== 'admin' && user.role !== 'Admin') {
+        return res.status(403).json({ success: false, message: 'Only administrators can reverse payroll.' });
+    }
+
+    const connection = await dbManager.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get stats before deletion
+        const [stats] = await connection.query(
+            'SELECT COUNT(*) as count, SUM(CAST(NETSAL AS DECIMAL(15,2))) as total FROM emppay WHERE MONTHYEAR = ? AND deleted_at IS NULL',
+            [monthYear]
+        );
+
+        if (!stats || stats.count === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: `No active payroll records found for ${monthYear}` });
+        }
+
+        // 2. Perform Soft Delete (or Hard Delete based on policy - here we soft delete )
+        await connection.query(
+            'UPDATE emppay SET deleted_at = CURRENT_TIMESTAMP, is_synced = 0 WHERE MONTHYEAR = ? AND deleted_at IS NULL',
+            [monthYear]
+        );
+
+        // 3. Log into Reversal Table
+        await connection.query(
+            'INSERT INTO payroll_reversals (month_year, reversed_by, reason, record_count, total_amount) VALUES (?, ?, ?, ?, ?)',
+            [monthYear, user.username, reason || 'No reason provided', stats.count, stats.total || 0]
+        );
+
+        await connection.commit();
+
+        // 4. Audit Logging
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'REVERSE_SALARY',
+            module: 'PAYROLL',
+            description: `Reversed salary for ${monthYear} (${stats.count} records, ${stats.total || 0} total)`,
+            newValue: { monthYear, reason },
+            ip: req.socket.remoteAddress
+        });
+
+        // 4. Beta Usage Tracking
+        metricsService.recordUsage('reversals');
+
+        res.json({
+            success: true,
+            message: `Successfully reversed ${stats.count} records for ${monthYear}.`
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Reverse Salary Error:', error);
+        res.status(500).json({ success: false, message: 'Server error during reversal' });
     } finally {
         connection.release();
     }

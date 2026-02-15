@@ -10,7 +10,8 @@ import {
     ChevronRight,
     AlertCircle,
     CheckCircle2,
-    Loader2
+    Loader2,
+    ShieldAlert
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,6 +63,7 @@ export default function Salary() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [editingRow, setEditingRow] = useState(null);
     const [bonusValue, setBonusValue] = useState("0");
+    const [isReversing, setIsReversing] = useState(false);
 
     const monthYear = `${month}-${year}`;
 
@@ -161,6 +163,39 @@ export default function Salary() {
         }
     };
 
+    const handleReverse = async () => {
+        const reason = prompt(`CRITICAL: You are about to reverse the entire payroll for ${monthYear}. This cannot be undone easily.\n\nPlease enter a reason for reversal:`);
+        if (reason === null) return; // Cancelled
+        if (reason.trim() === '') {
+            toast.error("Reversal reason is required");
+            return;
+        }
+
+        setIsReversing(true);
+        try {
+            const response = await fetch('/api/salary/reverse', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ monthYear, reason })
+            });
+            const data = await response.json();
+            if (data.success) {
+                toast.success(data.message);
+                setSalaryData([]); // Clear local UI
+                fetchSalary();
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error("Reversal failed");
+        } finally {
+            setIsReversing(false);
+        }
+    };
+
     const handleCellChange = (rowId, key, value) => {
         setSalaryData(prev => prev.map(row => {
             if (row.id === rowId) {
@@ -219,6 +254,16 @@ export default function Salary() {
                                 <RefreshCcw className="w-4 h-4" />
                                 Refresh
                             </button>
+                            {salaryData.length > 0 && (
+                                <button
+                                    onClick={handleReverse}
+                                    disabled={isReversing || isLoading}
+                                    className="btn-secondary py-2 text-sm text-red-600 hover:bg-red-50 border-red-200"
+                                >
+                                    {isReversing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                                    Reverse
+                                </button>
+                            )}
                         </div>
                     </div>
 

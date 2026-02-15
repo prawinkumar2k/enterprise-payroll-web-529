@@ -1,4 +1,7 @@
-import pool from '../db.js';
+import dbManager from '../database/dbManager.js';
+import { logAudit } from '../utils/auditLogger.js';
+import { randomUUID } from 'crypto';
+import licenseService from '../services/license.service.js';
 
 const EMP_FIELDS = [
     'SLNO', 'EMPNO', 'SNAME', 'DESIGNATION', 'AbsGroup', 'DGroup', 'PAY', 'GradePay', 'Category',
@@ -9,50 +12,66 @@ const EMP_FIELDS = [
 
 export const getEmployees = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM empdet ORDER BY id DESC');
+        const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NULL ORDER BY id DESC');
         res.json(rows);
     } catch (error) {
         console.error('Error fetching employees:', error);
-        res.status(500).json({ error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
+        res.status(500).json({ error: error.message });
     }
 };
 
 export const getTrashedEmployees = async (req, res) => {
     try {
-        // Safe query with try/catch specific to table existence
-        const [rows] = await pool.query('SELECT * FROM emptrash ORDER BY id DESC');
+        const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
         res.json(rows);
     } catch (error) {
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-            try {
-                // Auto-fix: Create table if it doesn't exist
-                await pool.query("CREATE TABLE IF NOT EXISTS emptrash LIKE empdet");
-                return res.json([]);
-            } catch (createError) {
-                console.error('Error creating emptrash table:', createError);
-                return res.status(500).json({ error: "Failed to initialize trash", details: createError.message });
-            }
-        }
         console.error('Error fetching trashed employees:', error);
-        res.status(500).json({ error: "Failed to load trash", details: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
 export const createEmployee = async (req, res) => {
     const data = req.body;
-    const keys = EMP_FIELDS.filter(f => data[f] !== undefined);
-    const values = keys.map(k => data[k]);
+    const user = req.user || { username: 'SYSTEM' };
+
+    // --- COMMERCIAL LIMIT CHECK ---
+    const limits = await licenseService.getProductLimits();
+    const [countRow] = await dbManager.query('SELECT COUNT(*) as count FROM empdet WHERE deleted_at IS NULL');
+    const currentCount = countRow[0].count;
+
+    if (currentCount >= limits.maxEmployees) {
+        return res.status(403).json({
+            success: false,
+            message: `Employee limit reached (${limits.maxEmployees}). Please upgrade your license to add more employees.`,
+            isTrial: !limits.isLicensed
+        });
+    }
+
+    const uuid = randomUUID();
+    const keys = [...EMP_FIELDS.filter(f => data[f] !== undefined), 'uuid', 'is_synced', 'device_id'];
+    const values = [...EMP_FIELDS.filter(f => data[f] !== undefined).map(k => data[k]), uuid, 0, 'SERVER_01'];
     const placeholders = keys.map(() => '?').join(', ');
 
-    if (keys.length === 0) {
+    if (keys.length <= 3) {
         return res.status(400).json({ error: "No valid fields provided" });
     }
 
-    const query = `INSERT INTO empdet (${keys.join(', ')}) VALUES (${placeholders})`;
+    const query = `INSERT INTO empdet (${keys.map(k => `\`${k}\``).join(', ')}) VALUES (${placeholders})`;
 
     try {
-        const [result] = await pool.query(query, values);
-        res.status(201).json({ id: result.insertId, ...data });
+        const result = await dbManager.execute(query, values);
+
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'CREATE_EMPLOYEE',
+            module: 'EMPLOYEE',
+            description: `Created employee ${data.EMPNO}`,
+            newValue: { ...data, uuid },
+            ip: req.socket.remoteAddress
+        });
+
+        res.status(201).json({ id: result.insertId, uuid, ...data });
     } catch (error) {
         console.error('Error creating employee:', error);
         res.status(500).json({ error: error.message });
@@ -62,94 +81,124 @@ export const createEmployee = async (req, res) => {
 export const updateEmployee = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
+    const user = req.user || { username: 'SYSTEM' };
 
-    const keys = EMP_FIELDS.filter(f => data[f] !== undefined);
-    const values = keys.map(k => data[k]);
-
-    if (keys.length === 0) {
-        return res.status(400).json({ error: "No valid fields provided" });
-    }
-
-    const setClause = keys.map(k => `${k} = ?`).join(', ');
-    const query = `UPDATE empdet SET ${setClause} WHERE id = ?`;
-
+    const connection = await dbManager.getConnection();
     try {
-        const [result] = await pool.query(query, [...values, id]);
-        if (result.affectedRows === 0) {
+        await connection.beginTransaction();
+
+        const [existing] = await connection.query('SELECT * FROM empdet WHERE id = ? FOR UPDATE', [id]);
+        if (existing.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ error: "Employee not found" });
         }
+
+        const keys = EMP_FIELDS.filter(f => data[f] !== undefined);
+        const values = keys.map(k => data[k]);
+
+        if (keys.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: "No valid fields provided" });
+        }
+
+        const setClause = keys.map(k => `\`${k}\` = ?`).join(', ');
+        const query = `UPDATE empdet SET ${setClause}, is_synced = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+
+        await connection.query(query, [...values, id]);
+        await connection.commit();
+
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'UPDATE_EMPLOYEE',
+            module: 'EMPLOYEE',
+            description: `Updated employee ${id}`,
+            oldValue: existing[0],
+            newValue: { ...existing[0], ...data },
+            ip: req.socket.remoteAddress
+        });
+
         res.json({ id, ...data });
     } catch (error) {
+        await connection.rollback();
         console.error('Error updating employee:', error);
         res.status(500).json({ error: error.message });
+    } finally {
+        connection.release();
     }
 };
 
 export const deleteEmployee = async (req, res) => {
     const { id } = req.params;
-    const connection = await pool.getConnection();
+    const user = req.user || { username: 'SYSTEM' };
 
     try {
-        await connection.beginTransaction();
-
-        const [rows] = await connection.query('SELECT * FROM empdet WHERE id = ?', [id]);
-        if (rows.length === 0) {
-            await connection.rollback();
+        const [existing] = await dbManager.query('SELECT * FROM empdet WHERE id = ?', [id]);
+        if (existing.length === 0) {
             return res.status(404).json({ error: "Employee not found" });
         }
-        const employee = rows[0];
 
-        // Ensure emptrash exists before inserting
-        // Ideally this should be a migration, but for safety in this task:
-        await connection.query("CREATE TABLE IF NOT EXISTS emptrash LIKE empdet");
+        await dbManager.execute('UPDATE empdet SET deleted_at = CURRENT_TIMESTAMP, is_synced = 0 WHERE id = ?', [id]);
 
-        const keys = Object.keys(employee);
-        const values = Object.values(employee);
-        const placeholders = keys.map(() => '?').join(', ');
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'DELETE_EMPLOYEE',
+            module: 'EMPLOYEE',
+            description: `Soft deleted employee ${existing[0].EMPNO}`,
+            oldValue: existing[0],
+            ip: req.socket.remoteAddress
+        });
 
-        await connection.query(`INSERT INTO emptrash (${keys.join(', ')}) VALUES (${placeholders})`, values);
-        await connection.query('DELETE FROM empdet WHERE id = ?', [id]);
-
-        await connection.commit();
         res.json({ message: "Employee moved to trash" });
     } catch (error) {
-        await connection.rollback();
         console.error('Error deleting employee:', error);
         res.status(500).json({ error: error.message });
-    } finally {
-        connection.release();
     }
 };
 
 export const restoreEmployee = async (req, res) => {
     const { id } = req.params;
-    const connection = await pool.getConnection();
+    const user = req.user || { username: 'SYSTEM' };
 
     try {
-        await connection.beginTransaction();
+        await dbManager.execute('UPDATE empdet SET deleted_at = NULL, is_synced = 0 WHERE id = ?', [id]);
 
-        const [rows] = await connection.query('SELECT * FROM emptrash WHERE id = ?', [id]);
-        if (rows.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: "Employee not found in trash" });
-        }
-        const employee = rows[0];
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'RESTORE_EMPLOYEE',
+            module: 'EMPLOYEE',
+            description: `Restored employee ${id}`,
+            ip: req.socket.remoteAddress
+        });
 
-        const keys = Object.keys(employee);
-        const values = Object.values(employee);
-        const placeholders = keys.map(() => '?').join(', ');
-
-        // Use IGNORE in case ID already exists back in empdet (shouldn't happen but safety first)
-        await connection.query(`INSERT IGNORE INTO empdet (${keys.join(', ')}) VALUES (${placeholders})`, values);
-        await connection.query('DELETE FROM emptrash WHERE id = ?', [id]);
-
-        await connection.commit();
-        res.json({ message: "Employee restored from trash" });
+        res.json({ message: "Employee restored" });
     } catch (error) {
-        await connection.rollback();
         console.error('Error restoring employee:', error);
         res.status(500).json({ error: error.message });
-    } finally {
-        connection.release();
+    }
+};
+
+export const permanentDeleteEmployee = async (req, res) => {
+    const { id } = req.params;
+    const user = req.user || { username: 'SYSTEM' };
+
+    try {
+        await dbManager.execute('DELETE FROM empdet WHERE id = ?', [id]);
+
+        await logAudit({
+            userId: user.username,
+            username: user.name || user.username,
+            actionType: 'PERMANENT_DELETE_EMPLOYEE',
+            module: 'EMPLOYEE',
+            description: `Permanently deleted employee ${id}`,
+            ip: req.socket.remoteAddress
+        });
+
+        res.json({ message: "Employee deleted permanently" });
+    } catch (error) {
+        console.error('Error permanently deleting employee:', error);
+        res.status(500).json({ error: error.message });
     }
 };

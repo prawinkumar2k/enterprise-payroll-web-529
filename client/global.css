@@ -149,9 +149,21 @@
     font-family: inherit;
   }
 
-  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+  :where(p, span, li, a, label, td) {
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  button,
+  th {
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   /* Grid Layout Utility */
@@ -200,5 +212,107 @@
   /* Font Utility Class */
   .font-serif {
     font-family: "Times New Roman", Times, serif;
+  }
+}
+
+/* ==========================================================================
+   ENTERPRISE PRINT SYSTEM (A4)
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+
+  body.landscape @page {
+    size: A4 landscape;
+  }
+
+  body.portrait @page {
+    size: A4 portrait;
+  }
+
+  header,
+  nav,
+  aside,
+  .print-hide,
+  .no-print,
+  [role="navigation"],
+  button {
+    display: none !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    font-family: "Times New Roman", Times, serif !important;
+  }
+
+  .print-report-root {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .print-report-root table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 2px solid #000 !important;
+  }
+
+  .print-report-root th,
+  .print-report-root td {
+    border: 1px solid #000 !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .print-report-root th {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+}
+
+/* ==========================================================================
+   PRINT PREVIEW STYLES (SCREEN ONLY)
+   ========================================================================== */
+@media screen {
+  .print-report-root {
+    background-color: #525659;
+    padding: 40px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .print-staged-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .landscape .print-staged-container>div {
+    width: 297mm;
+    min-height: 210mm;
+    background: white;
+    padding: 10mm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+  }
+
+  .portrait .print-staged-container>div {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    padding: 10mm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
   }
 }

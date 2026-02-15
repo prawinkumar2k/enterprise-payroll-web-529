@@ -1,0 +1,3019 @@
+{
+  "test": "Concurrent Reads",
+  "concurrent": 50,
+  "iterations": 10,
+  "requests": 500,
+  "success": 0,
+  "errors": 500,
+  "responseTimes": [
+    17,
+    17,
+    21,
+    21,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    23,
+    23,
+    23,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    25,
+    25,
+    25,
+    25,
+    25,
+    26,
+    26,
+    26,
+    26,
+    26,
+    26,
+    27,
+    27,
+    28,
+    29,
+    29,
+    29,
+    30,
+    30,
+    31,
+    31,
+    32,
+    32,
+    32,
+    33,
+    33,
+    33,
+    34,
+    34,
+    35,
+    35,
+    36,
+    36,
+    37,
+    37,
+    37,
+    38,
+    38,
+    39,
+    39,
+    39,
+    40,
+    40,
+    41,
+    41,
+    41,
+    42,
+    43,
+    44,
+    44,
+    44,
+    44,
+    44,
+    44,
+    45,
+    46,
+    46,
+    46,
+    46,
+    47,
+    47,
+    48,
+    48,
+    49,
+    49,
+    49,
+    50,
+    50,
+    50,
+    50,
+    51,
+    51,
+    51,
+    51,
+    53,
+    53,
+    53,
+    53,
+    53,
+    54,
+    54,
+    54,
+    54,
+    56,
+    56,
+    57,
+    58,
+    58,
+    58,
+    59,
+    60,
+    60,
+    61,
+    61,
+    62,
+    62,
+    63,
+    63,
+    63,
+    64,
+    64,
+    65,
+    65,
+    65,
+    66,
+    66,
+    66,
+    67,
+    67,
+    68,
+    68,
+    68,
+    68,
+    69,
+    70,
+    70,
+    70,
+    71,
+    71,
+    71,
+    72,
+    72,
+    72,
+    74,
+    74,
+    75,
+    75,
+    75,
+    76,
+    77,
+    78,
+    78,
+    78,
+    78,
+    79,
+    79,
+    81,
+    81,
+    82,
+    82,
+    83,
+    85,
+    85,
+    85,
+    85,
+    86,
+    86,
+    86,
+    87,
+    89,
+    89,
+    90,
+    91,
+    91,
+    91,
+    91,
+    93,
+    93,
+    93,
+    93,
+    94,
+    96,
+    96,
+    96,
+    97,
+    97,
+    97,
+    99,
+    99,
+    99,
+    99,
+    100,
+    101,
+    101,
+    102,
+    102,
+    103,
+    103,
+    103,
+    103,
+    104,
+    104,
+    104,
+    105,
+    106,
+    106,
+    107,
+    107,
+    108,
+    108,
+    108,
+    109,
+    109,
+    109,
+    109,
+    110,
+    110,
+    110,
+    111,
+    111,
+    111,
+    112,
+    112,
+    112,
+    112,
+    113,
+    113,
+    113,
+    115,
+    115,
+    115,
+    117,
+    117,
+    117,
+    118,
+    118,
+    118,
+    119,
+    119,
+    119,
+    119,
+    120,
+    120,
+    122,
+    122,
+    123,
+    123,
+    123,
+    123,
+    124,
+    125,
+    126,
+    127,
+    127,
+    127,
+    128,
+    129,
+    129,
+    130,
+    130,
+    132,
+    132,
+    133,
+    133,
+    133,
+    133,
+    135,
+    135,
+    137,
+    137,
+    137,
+    141,
+    141,
+    141,
+    142,
+    142,
+    142,
+    143,
+    143,
+    143,
+    143,
+    143,
+    144,
+    145,
+    146,
+    147,
+    149,
+    150,
+    151,
+    152,
+    152,
+    154,
+    154,
+    154,
+    157,
+    158,
+    158,
+    159,
+    159,
+    160,
+    161,
+    162,
+    162,
+    166,
+    167,
+    167,
+    170,
+    172,
+    173,
+    174,
+    175,
+    175,
+    179,
+    183,
+    183,
+    184,
+    185,
+    186,
+    188,
+    189,
+    191,
+    192,
+    194,
+    198,
+    199,
+    201,
+    204,
+    204,
+    205,
+    205,
+    208,
+    209,
+    213,
+    213,
+    216,
+    217,
+    218,
+    220,
+    221,
+    223,
+    225,
+    226,
+    230,
+    231,
+    238,
+    238,
+    239,
+    243,
+    243,
+    244,
+    244,
+    249,
+    251,
+    252,
+    253,
+    253,
+    257,
+    258,
+    260,
+    260,
+    261,
+    262,
+    263,
+    267,
+    268,
+    270,
+    270,
+    271,
+    271,
+    272,
+    274,
+    274,
+    275,
+    277,
+    279,
+    283,
+    285,
+    287,
+    289,
+    289,
+    292,
+    292,
+    293,
+    294,
+    296,
+    296,
+    297,
+    298,
+    298,
+    300,
+    303,
+    308,
+    308,
+    310,
+    311,
+    312,
+    313,
+    314,
+    322,
+    323,
+    325,
+    326,
+    327,
+    327,
+    333,
+    335,
+    339,
+    343,
+    354,
+    355,
+    355,
+    355,
+    356,
+    361,
+    362,
+    363,
+    364,
+    369,
+    370,
+    371,
+    373,
+    373,
+    378,
+    381,
+    391,
+    391,
+    392,
+    394,
+    397,
+    400,
+    400,
+    402,
+    404,
+    409,
+    411,
+    411,
+    415,
+    420,
+    425,
+    427,
+    427,
+    430,
+    435,
+    440,
+    442,
+    444,
+    467,
+    471,
+    474,
+    479,
+    481,
+    489,
+    494,
+    497,
+    499,
+    500,
+    511,
+    516,
+    518,
+    524,
+    541,
+    552,
+    553,
+    557,
+    575,
+    589,
+    620,
+    624,
+    641,
+    650,
+    653,
+    656,
+    657,
+    673,
+    679,
+    698,
+    705,
+    708,
+    722,
+    729,
+    739,
+    749,
+    758,
+    778,
+    794,
+    807,
+    809,
+    811,
+    828,
+    844,
+    868,
+    869,
+    878,
+    886,
+    893,
+    897,
+    912,
+    922
+  ],
+  "errors_detail": [
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.057Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.066Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.075Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.080Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.094Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.096Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.112Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.118Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.129Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.138Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.139Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.153Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.160Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.165Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.174Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.176Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.185Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.193Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.199Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.209Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.211Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.217Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.228Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.233Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.240Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.242Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.249Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.259Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.266Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.273Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.278Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.286Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.292Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.300Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.305Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.319Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.324Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.344Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.350Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.365Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.379Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.390Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.398Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.408Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.423Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.427Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.440Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.443Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.453Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.456Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.478Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.489Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.496Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.508Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.511Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.524Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.530Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.538Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.545Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.552Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.557Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.565Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.573Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.579Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.582Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.592Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.607Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.608Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.622Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.630Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.642Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.652Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.670Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.682Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.685Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.718Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.724Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.733Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.741Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.751Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.759Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.765Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.775Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.781Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.792Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.795Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.804Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.823Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.851Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.863Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.879Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.897Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.911Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.914Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.938Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.954Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.969Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.971Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.988Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:56.990Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.024Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.035Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.052Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.054Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.102Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.102Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.117Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.136Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.151Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.169Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.187Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.188Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.211Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.215Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.246Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.256Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.257Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.285Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.293Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.308Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.324Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.342Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.359Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.359Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.382Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.403Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.426Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.430Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.441Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.450Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.483Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.499Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.507Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.511Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.528Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.559Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.560Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.597Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.649Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.659Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.682Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.698Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.718Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.750Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.799Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.831Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.833Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.891Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.901Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.909Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.936Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.951Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.965Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.983Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.989Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:57.998Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.021Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.023Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.040Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.055Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.072Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.077Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.120Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.120Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.148Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.180Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.188Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.214Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.216Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.285Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.298Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.322Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.347Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.350Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.392Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.398Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.432Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.463Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.481Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.498Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.543Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.544Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.577Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.577Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.582Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.628Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.629Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.646Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.660Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.672Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.676Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.712Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.726Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.747Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.763Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.785Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.812Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.817Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.831Z"
+    },
+    {
+      "status": 500,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.842Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.860Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.860Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.866Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.867Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.881Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.883Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.898Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.911Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.914Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.929Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.932Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.944Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.946Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.948Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.963Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:58.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.019Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.035Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.036Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.051Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.065Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.067Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.083Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.098Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.107Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.124Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.128Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.131Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.146Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.147Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.180Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.183Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.185Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.214Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.215Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.215Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.223Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.225Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.228Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.244Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.259Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.267Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.318Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.318Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.319Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.321Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.322Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.322Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.335Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.339Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.340Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.340Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.347Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.354Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.357Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.366Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.375Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.376Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.376Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.379Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.391Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.395Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.406Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.408Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.412Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.415Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.429Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.447Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.448Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.453Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.463Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.466Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.481Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.506Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.506Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.516Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.524Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.526Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.531Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.541Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.543Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.548Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.556Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.559Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.562Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.565Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.575Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.578Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.580Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.586Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.589Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.592Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.616Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.617Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.619Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.619Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.619Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.620Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.620Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.621Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.624Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.627Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.629Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.633Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.638Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.641Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.643Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.645Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.648Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.654Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.657Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.660Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.664Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.675Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.677Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.680Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.692Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.695Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.697Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.710Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.713Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.716Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.719Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.730Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.733Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.736Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.739Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.742Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.745Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.747Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.749Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.754Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.754Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.756Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.757Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.759Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.764Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.768Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.771Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.773Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.775Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.778Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.803Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.804Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.804Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.804Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.807Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.810Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.812Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.813Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.815Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.821Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.824Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.827Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.829Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.831Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.834Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.836Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.840Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.845Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.847Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.852Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.853Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.854Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.855Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.857Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.859Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.861Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.864Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.870Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.873Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.879Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.882Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.886Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.890Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.892Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.894Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.896Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.898Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.900Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.903Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.908Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.910Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.913Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.917Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.922Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.924Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.926Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.928Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.930Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.931Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.934Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.964Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.972Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.973Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.979Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.985Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.987Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.989Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.995Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:17:59.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.003Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.011Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.025Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.027Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.032Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.037Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.039Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.041Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.043Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.045Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.047Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.051Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.055Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.058Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.059Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.061Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.064Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.067Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.069Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.072Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.074Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.076Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.097Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.098Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.098Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.099Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.100Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.101Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.101Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.101Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.103Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.106Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.108Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.111Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.114Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.119Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.122Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.124Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.127Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.132Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.138Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.139Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.141Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.143Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.145Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.146Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.148Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.153Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.157Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.158Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.160Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.162Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.164Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.169Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.176Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.178Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.180Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.183Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.185Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.188Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.191Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.194Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.200Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.202Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.205Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.207Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.211Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.214Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.218Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.221Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.223Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-12T04:18:00.224Z"
+    }
+  ],
+  "startTime": "2026-02-12T04:17:56.010Z",
+  "endTime": "2026-02-12T04:18:00.224Z",
+  "avgResponseTime": 201,
+  "p95ResponseTime": 673,
+  "errorRate": "100.00",
+  "successRate": "0.00",
+  "status": "FAIL"
+}

@@ -1,0 +1,11 @@
+{
+  "test": "Rate Limit Enforcement",
+  "totalRequests": 200,
+  "success": 0,
+  "rateLimited": 200,
+  "errors": 0,
+  "rateLimitDetected": true,
+  "startTime": "2026-02-12T04:32:19.279Z",
+  "endTime": "2026-02-12T04:32:20.949Z",
+  "status": "ENFORCED"
+}

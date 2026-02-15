@@ -46,3 +46,17 @@ Thumbs.db
 # ===============================
 .config/
 .cache/
+
+# ===============================
+# Desktop / Release / Data
+# ===============================
+release/
+dist-release/
+dist-desktop/
+data/
+server/trial.json
+server/beta-metrics.json
+*.exe
+*.blockmap
+*.yml
+.electron-builder-cache/

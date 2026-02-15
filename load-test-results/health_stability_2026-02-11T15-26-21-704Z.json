@@ -1,0 +1,33 @@
+{
+  "test": "Health Check Stability",
+  "checks": 20,
+  "success": 0,
+  "errors": 20,
+  "responseTimes": [
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    3,
+    1
+  ],
+  "statuses": [],
+  "startTime": "2026-02-11T15:26:52.026Z",
+  "endTime": "2026-02-11T15:27:02.271Z",
+  "avgResponseTime": 1,
+  "status": "FAIL"
+}

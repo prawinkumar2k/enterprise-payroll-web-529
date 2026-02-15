@@ -1,0 +1,13 @@
+﻿NAMES                                                                                                       STATUS                     PORTS
+payroll-frontend                                                                                            Up 9 minutes (unhealthy)   8080/tcp
+payroll-backend                                                                                             Up 9 minutes (healthy)     5001/tcp
+payroll-mysql                                                                                               Up 13 minutes (healthy)    3306/tcp, 33060/tcp
+k8s_frontend_payroll-frontend-7b6f579964-gcrdx_enterprise-payroll_7cfb0888-4e87-44ac-b804-6d4abea3bb17_43   Up 3 hours                 
+k8s_frontend_payroll-frontend-7b6f579964-9945c_enterprise-payroll_3a3623d4-7b00-4d54-8a2f-457bd5a79fdd_43   Up 3 hours                 
+k8s_grafana_grafana-dcdccbdc8-5s77b_enterprise-payroll_b7238285-8500-47fc-ad87-6bf42d971013_21              Up 3 hours                 
+k8s_prometheus_prometheus-74974d5c66-lff9j_enterprise-payroll_ca63b603-3997-4465-a017-fdf93cfca943_21       Up 3 hours                 
+k8s_redis_redis-7554fc7559-lx72q_enterprise-payroll_ff871e0e-9d9c-490d-914c-37c5bc6ed4f6_21                 Up 3 hours                 
+k8s_api_payroll-api-69f4c78746-bgnpj_enterprise-payroll_de398694-b67b-4688-9a01-653b8cdfa24e_32             Up 3 hours                 
+k8s_api_payroll-api-69f4c78746-x457w_enterprise-payroll_3e1c7c44-9a2f-4939-8c79-455d8e236bd9_32             Up 3 hours                 
+k8s_api_payroll-api-69f4c78746-9bskx_enterprise-payroll_046e951a-223e-4272-a5cc-63e6bb96bae4_32             Up 3 hours                 
+k8s_api_payroll-api-69f4c78746-lqghf_enterprise-payroll_fd25fd0f-d32a-4ace-852b-8b7090ec1303_32             Up 3 hours                 

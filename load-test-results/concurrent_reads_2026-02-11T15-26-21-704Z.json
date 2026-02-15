@@ -1,0 +1,3019 @@
+{
+  "test": "Concurrent Reads",
+  "concurrent": 50,
+  "iterations": 10,
+  "requests": 500,
+  "success": 0,
+  "errors": 500,
+  "responseTimes": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    6,
+    6
+  ],
+  "errors_detail": [
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.950Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.951Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.952Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.953Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.954Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.955Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.955Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.958Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.959Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.960Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.961Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.962Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.962Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.962Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.962Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.966Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.967Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.968Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.969Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.970Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.971Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.971Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.971Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.974Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.975Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.976Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.977Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.978Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.978Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.978Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.978Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.981Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.982Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.983Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.984Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.985Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.985Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.985Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.985Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.989Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.990Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.991Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.992Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.993Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.994Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.997Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.998Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.999Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.999Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.999Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.999Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:51.999Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.000Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.001Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.002Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.002Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.002Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.002Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.005Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.006Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.007Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.008Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.009Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.010Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.010Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.010Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.010Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.013Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.014Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.015Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.016Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.017Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.017Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.017Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.019Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.020Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.021Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.022Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.023Z"
+    },
+    {
+      "status": 429,
+      "endpoint": "/api/employees",
+      "time": "2026-02-11T15:26:52.024Z"
+    }
+  ],
+  "startTime": "2026-02-11T15:26:51.946Z",
+  "endTime": "2026-02-11T15:26:52.024Z",
+  "avgResponseTime": 3,
+  "p95ResponseTime": 5,
+  "errorRate": "100.00",
+  "successRate": "0.00",
+  "status": "FAIL"
+}

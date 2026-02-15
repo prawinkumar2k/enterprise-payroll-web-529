@@ -1,0 +1,298 @@
+/**
+ * PRINT-FIRST ENGINE - STYLESHEET
+ * Designed for manual-pagination reports
+ */
+
+/* ================================================
+   1. RESET & SCREEN PREVIEW
+   ================================================ */
+:root {
+    --print-bg: #f5f5f5;
+    --paper-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* ================================================
+   1.5 GLOBAL PRINT ROOT CONTROL
+   ================================================ */
+@media print {
+    @page {
+        margin: 10mm !important;
+    }
+
+    /* THE CORE RESET */
+    #root,
+    .navbar,
+    .sidebar,
+    .no-print,
+    .controls,
+    button,
+    .fixed {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    #print-root {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body,
+    html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        width: 100% !important;
+        height: auto !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    * {
+        box-sizing: border-box !important;
+    }
+}
+
+@media screen {
+
+    /* Style the print-root for live preview on screen */
+    #print-root {
+        display: block;
+        width: 100%;
+        background: var(--print-bg);
+        z-index: 50;
+    }
+
+    .print-engine-preview {
+        background: var(--print-bg);
+        padding: 40px 0;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+}
+
+.print-report-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ================================================
+   2. ENTERPRISE PAGE CONTROLS (NON-NEGOTIABLE)
+   ================================================ */
+.print-page {
+    position: relative;
+    background: white;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Prevent ANY pixel overflow trigger */
+}
+
+/* Screen Preview Styling */
+@media screen {
+    .print-engine-preview {
+        background: #f0f0f0;
+        padding: 40px 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .print-page {
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+}
+
+@media print {
+
+    /* 1:1 Orientation Locking */
+    body.portrait .print-page {
+        width: 190mm !important;
+        /* A4 210mm - 20mm margin */
+        height: 277mm !important;
+        /* A4 297mm - 20mm margin */
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    body.landscape .print-page {
+        width: 277mm !important;
+        /* A4 297mm - 20mm margin */
+        height: 190mm !important;
+        /* A4 210mm - 20mm margin */
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    /* Final page cleanup */
+    .print-page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* ================================================
+   3. REPEATING STRUCTURE
+   ================================================ */
+.print-page-header {
+    margin-bottom: 5mm;
+}
+
+.print-page-content {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.print-page-footer {
+    border-top: 1px solid #ddd;
+    padding-top: 2mm;
+    margin-top: 2mm;
+    font-size: 9px;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ================================================
+   4. LEDGER-STYLE TABLES (GOVERNMENT STANDARD)
+   ================================================ */
+.ledger-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    /* Force respect for col widths */
+    border-collapse: collapse !important;
+    background: white !important;
+}
+
+@media print {
+    thead {
+        display: table-header-group !important;
+        /* Forces header repeat */
+    }
+}
+
+.ledger-table thead tr {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+.ledger-table tr {
+    height: 24px !important;
+}
+
+.ledger-table th,
+.ledger-table td {
+    border: 1px solid #000 !important;
+    font-family: var(--print-font-family, 'Times New Roman') !important;
+    font-size: var(--print-font-size, 10px) !important;
+    padding: 4px 3px !important;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    page-break-inside: avoid !important;
+}
+
+/* Alignment Helpers */
+.ledger-table .text-left {
+    text-align: left !important;
+}
+
+.ledger-table .text-right {
+    text-align: right !important;
+}
+
+/* SIGNATURE GRID */
+.print-signature-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5mm;
+    margin-top: 10mm;
+}
+
+.print-sig-box {
+    text-align: center;
+}
+
+.print-sig-line {
+    border-top: 1.5px solid #000;
+    width: 80%;
+    margin: 0 auto 2mm auto;
+    min-height: 12mm;
+    /* Sign area */
+}
+
+.print-sig-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+/* Forbidden styles explicitly reset */
+.ledger-table * {
+    writing-mode: horizontal-tb !important;
+    transform: none !important;
+    overflow: visible !important;
+}
+
+/* ================================================
+   5. REPORT HEADER COMPONENTS
+   ================================================ */
+.report-header {
+    text-align: center;
+    position: relative;
+    padding-bottom: 2mm;
+}
+
+.report-logo {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.logo-placeholder {
+    width: 40px;
+    height: 40px;
+    border: 1px dashed #ccc;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.institution-name {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.institution-address {
+    font-size: 10px;
+    margin: 2px 0;
+}
+
+.report-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 5px 0 2px 0;
+    text-decoration: underline;
+    text-transform: uppercase;
+}
+
+.report-period {
+    font-size: 11px;
+    font-weight: 600;
+    margin: 0;
+}

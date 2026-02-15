@@ -1,0 +1,114 @@
+{
+  "test": "Health Check Stability",
+  "checks": 20,
+  "success": 20,
+  "errors": 0,
+  "responseTimes": [
+    12,
+    14,
+    7,
+    6,
+    8,
+    7,
+    7,
+    7,
+    8,
+    10,
+    9,
+    10,
+    5,
+    7,
+    5,
+    17,
+    6,
+    7,
+    6,
+    5
+  ],
+  "statuses": [
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:22.305Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:22.825Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:23.344Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:23.855Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:24.367Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:24.881Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:25.391Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:25.903Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:26.415Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:26.933Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:27.446Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:27.958Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:28.477Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:28.992Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:29.500Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:30.046Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:30.557Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:31.073Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:31.590Z"
+    },
+    {
+      "status": "healthy",
+      "time": "2026-02-12T04:21:32.100Z"
+    }
+  ],
+  "startTime": "2026-02-12T04:21:22.292Z",
+  "endTime": "2026-02-12T04:21:32.607Z",
+  "avgResponseTime": 8,
+  "status": "PASS"
+}

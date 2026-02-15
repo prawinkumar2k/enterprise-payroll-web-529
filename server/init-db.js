@@ -97,6 +97,90 @@ async function initDB() {
             );
 
             CREATE TABLE IF NOT EXISTS emptrash LIKE empdet;
+            CREATE TABLE IF NOT EXISTS emppay (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                uuid VARCHAR(50) UNIQUE,
+                MONTHYEAR VARCHAR(20),
+                EMPNO VARCHAR(20),
+                SNAME VARCHAR(100),
+                Designation VARCHAR(100),
+                DGroup VARCHAR(50),
+                NoofDays VARCHAR(10),
+                LeaveDays VARCHAR(10),
+                WorkingDays VARCHAR(10),
+                PAY DECIMAL(10, 2),
+                GradePay DECIMAL(10, 2),
+                PHD VARCHAR(10),
+                MPHIL VARCHAR(10),
+                HATA DECIMAL(10, 2),
+                Allowance DECIMAL(10, 2),
+                DA DECIMAL(10, 2),
+                SPECIAL DECIMAL(10, 2),
+                INTERIM DECIMAL(10, 2),
+                GROSSPAY DECIMAL(10, 2),
+                EPF DECIMAL(10, 2),
+                ESI DECIMAL(10, 2),
+                ESIM DECIMAL(10, 2),
+                IT DECIMAL(10, 2),
+                PT DECIMAL(10, 2),
+                Advance DECIMAL(10, 2),
+                LIC DECIMAL(10, 2),
+                RECOVERY DECIMAL(10, 2),
+                OTHERS DECIMAL(10, 2),
+                TOTDED DECIMAL(10, 2),
+                NETSAL DECIMAL(10, 2),
+                AccountNo VARCHAR(30),
+                BankName VARCHAR(100),
+                IFSCCode VARCHAR(20),
+                OtherAccNo VARCHAR(30),
+                Remark TEXT,
+                InterimPay DECIMAL(10, 2),
+                DAper VARCHAR(10),
+                AbsGroup VARCHAR(50),
+                Bonus DECIMAL(10, 2),
+                device_id VARCHAR(50),
+                is_synced TINYINT DEFAULT 0,
+                sync_version INT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS payroll_reversals (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                month_year VARCHAR(20) NOT NULL,
+                reversed_by VARCHAR(50),
+                reason TEXT,
+                record_count INT,
+                total_amount DECIMAL(15, 2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id VARCHAR(50),
+                ip_address VARCHAR(45),
+                status VARCHAR(20),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token VARCHAR(255) NOT NULL UNIQUE,
+                user_id INT,
+                device_id VARCHAR(50),
+                expires_at DATETIME,
+                revoked_at DATETIME NULL,
+                replaced_by_token VARCHAR(255) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS app_settings (
+                setting_key VARCHAR(50) PRIMARY KEY,
+                setting_value TEXT,
+                category VARCHAR(50),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
         `;
 
         await connection.query(schema);

@@ -245,11 +245,11 @@ export default function AuditLogs() {
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary font-bold text-xs border border-gray-200">
-                        {log.UserName.charAt(0)}
+                        {log.UserName?.charAt(0) || '?'}
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900 text-sm leading-tight">{log.UserName}</div>
-                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{log.Role}</div>
+                        <div className="font-bold text-gray-900 text-sm leading-tight">{log.UserName || 'Unknown'}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{log.Role || 'N/A'}</div>
                       </div>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${log.ActionType?.includes('FAILURE') ? 'bg-red-50 text-red-600' :

@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import dbManager from '../database/dbManager.js';
 
 /**
  * Capture IP Address
@@ -19,11 +19,11 @@ export const logAction = async ({ userId, username, role, module, actionType, de
         // Ensure Role is captured (default to 'user' if missing)
         const userRole = role || 'user';
 
-        await pool.query(
+        await dbManager.query(
             `INSERT INTO userlogs 
-            (UserID, UserName, Role, Module, ActionType, Description, IPAddress, LogDate, LogTime, CreatedAt) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, username, userRole, module, actionType, description, ip, logDate, logTime, now]
+            (UserID, UserName, Role, Module, ActionType, Description, IPAddress, LogDate, LogTime) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, username, userRole, module, actionType, description, ip, logDate, logTime]
         );
     } catch (err) {
         console.error('Audit Log Failed:', err);

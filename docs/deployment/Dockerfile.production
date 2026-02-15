@@ -1,0 +1,44 @@
+# --- STAGE 1: Frontend Builder ---
+FROM node:20-alpine AS client-builder
+WORKDIR /app/client
+COPY client/package*.json ./
+RUN npm install
+COPY client/ ./
+RUN npm run build
+
+# --- STAGE 2: Backend Dependencies ---
+FROM node:20-alpine AS server-deps
+WORKDIR /app/server
+COPY server/package*.json ./
+RUN npm install --omit=dev
+
+# --- STAGE 3: Final Production Image ---
+FROM node:20-alpine AS production
+
+# Security: Run as non-root user
+WORKDIR /app
+RUN addgroup -S enterprise && adduser -S payroll -G enterprise
+RUN mkdir -p /app/data && chown -y payroll:enterprise /app/data
+
+# Environment Defaults
+ENV NODE_ENV=production
+ENV DATA_PATH=/app/data
+ENV PORT=5001
+ENV HOST=0.0.0.0
+
+# Copy artifacts from builders
+COPY --from=client-builder /app/client/dist /app/client/dist
+COPY --from=server-deps /app/server/node_modules /app/server/node_modules
+COPY server/ /app/server/
+
+# Fix permissions for the payroll user
+RUN chown -R payroll:enterprise /app
+
+USER payroll
+EXPOSE 5001
+
+# Liveness check using Node.js for zero external dependencies
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:5001/api/health/live').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+CMD ["node", "server/index.js"]

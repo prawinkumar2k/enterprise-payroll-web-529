@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Search, Plus, Trash2, RefreshCw, X, Save, ArrowUpDown, AlertCircle } from "lucide-react";
+import { Search, Plus, Trash2, RefreshCw, X, Save, ArrowUpDown, AlertCircle, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { getApiUrl } from "../lib/api";
+import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 const ALL_FIELDS = [
   "id", "SLNO", "EMPNO", "SNAME", "DESIGNATION", "AbsGroup", "DGroup", "PAY",
@@ -22,6 +24,10 @@ export default function Employees() {
   const [currentEmployee, setCurrentEmployee] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
   const [errorState, setErrorState] = useState(null);
+  const [importData, setImportData] = useState([]);
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const fileInputRef = useRef(null);
+  const { toast } = useToast();
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -30,7 +36,11 @@ export default function Employees() {
 
     try {
       const endpoint = viewTrash ? '/employees/trash' : '/employees';
-      const response = await fetch(getApiUrl(endpoint));
+      const response = await fetch(getApiUrl(endpoint), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -116,7 +126,10 @@ export default function Employees() {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify(data),
       });
 
@@ -133,7 +146,10 @@ export default function Employees() {
   const moveToTrash = async (id) => {
     if (!confirm("Are you sure you want to move this employee to trash?")) return;
     try {
-      const response = await fetch(getApiUrl(`/employees/${id}`), { method: 'DELETE' });
+      const response = await fetch(getApiUrl(`/employees/${id}`), {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
       if (!response.ok) throw new Error("Delete failed");
       fetchEmployees();
     } catch (error) {
@@ -145,7 +161,10 @@ export default function Employees() {
   const restoreFromTrash = async (id) => {
     if (!confirm("Restore this employee?")) return;
     try {
-      const response = await fetch(getApiUrl(`/employees/${id}/restore`), { method: 'POST' });
+      const response = await fetch(getApiUrl(`/employees/${id}/restore`), {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
       if (!response.ok) throw new Error("Restore failed");
       fetchEmployees();
     } catch (error) {
@@ -162,6 +181,163 @@ export default function Employees() {
   const openCreate = () => {
     setCurrentEmployee({});
     setModalOpen(true);
+  };
+
+  // Export to Excel
+  const handleExportExcel = () => {
+    const exportData = sortedEmployees.map(emp => {
+      const row = {};
+      ALL_FIELDS.forEach(field => {
+        row[field] = emp[field] || '';
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+    XLSX.writeFile(wb, `employees-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    toast({
+      title: "Export Successful",
+      description: `${exportData.length} employee records exported to Excel`,
+    });
+  };
+
+  // Download Import Template
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        EMPNO: 'EMP001',
+        SNAME: 'John Doe',
+        DESIGNATION: 'Professor',
+        AbsGroup: 'Teaching Staff',
+        DGroup: 'A',
+        PAY: '50000',
+        GradePay: '10000',
+        Category: 'Teaching',
+        PANCARD: 'ABCDE1234F',
+        AccountNo: '1234567890',
+        BankName: 'State Bank',
+        IFSCCode: 'SBIN0001234',
+        DOB: '1980-01-01',
+        JDATE: '2010-06-01',
+        CheckStatus: 'Active'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, 'employee-import-template.xlsx');
+
+    toast({
+      title: "Template Downloaded",
+      description: "Fill in the template with employee data and import it back",
+    });
+  };
+
+  // Handle File Import
+  const handleFileImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast({
+            title: "No Data Found",
+            description: "The Excel file appears to be empty",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Validate required fields
+        const errors = [];
+        const validatedData = jsonData.map((row, index) => {
+          if (!row.EMPNO || !row.SNAME) {
+            errors.push(`Row ${index + 2}: Missing EMPNO or SNAME`);
+          }
+          return row;
+        });
+
+        if (errors.length > 0) {
+          toast({
+            title: "Validation Errors",
+            description: errors.slice(0, 3).join('\n') + (errors.length > 3 ? `\n...and ${errors.length - 3} more errors` : ''),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setImportData(validatedData);
+        setShowImportPreview(true);
+        toast({
+          title: "File Loaded",
+          description: `${validatedData.length} records ready for import. Review and confirm.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to read Excel file. Please check the format.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = ''; // Reset input
+  };
+
+  // Confirm Import
+  const handleConfirmImport = async () => {
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const empData of importData) {
+        try {
+          const response = await fetch(getApiUrl('/employees'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(empData),
+          });
+
+          if (response.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successCount} records. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+      });
+
+      setShowImportPreview(false);
+      setImportData([]);
+      fetchEmployees();
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import employee data",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -194,12 +370,42 @@ export default function Employees() {
               />
             </div>
             {!viewTrash && (
-              <button
-                onClick={openCreate}
-                className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded font-bold flex items-center gap-2 shadow-sm"
-              >
-                <Plus size={16} /> Add Employee
-              </button>
+              <>
+                <button
+                  onClick={openCreate}
+                  className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded font-bold flex items-center gap-2 shadow-sm"
+                >
+                  <Plus size={16} /> Add Employee
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 shadow-sm"
+                  title="Export to Excel"
+                >
+                  <Download size={16} /> Export
+                </button>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 shadow-sm"
+                  title="Download Import Template"
+                >
+                  <FileSpreadsheet size={16} /> Template
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 shadow-sm"
+                  title="Import from Excel"
+                >
+                  <Upload size={16} /> Import
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileImport}
+                  className="hidden"
+                />
+              </>
             )}
             <button
               onClick={fetchEmployees}
@@ -349,6 +555,77 @@ export default function Employees() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Preview Modal */}
+      {showImportPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+              <h2 className="text-xl font-bold text-gray-800">
+                Import Preview - {importData.length} Records
+              </h2>
+              <button
+                onClick={() => setShowImportPreview(false)}
+                className="p-1 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-grow">
+              <div className="overflow-x-auto border border-gray-300 rounded">
+                <table className="w-full border-collapse text-xs">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-2 border text-left font-bold">EMPNO</th>
+                      <th className="p-2 border text-left font-bold">SNAME</th>
+                      <th className="p-2 border text-left font-bold">DESIGNATION</th>
+                      <th className="p-2 border text-left font-bold">Category</th>
+                      <th className="p-2 border text-left font-bold">PAY</th>
+                      <th className="p-2 border text-left font-bold">AccountNo</th>
+                      <th className="p-2 border text-left font-bold">BankName</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importData.slice(0, 100).map((row, index) => (
+                      <tr key={index} className="hover:bg-blue-50">
+                        <td className="p-2 border">{row.EMPNO}</td>
+                        <td className="p-2 border">{row.SNAME}</td>
+                        <td className="p-2 border">{row.DESIGNATION}</td>
+                        <td className="p-2 border">{row.Category}</td>
+                        <td className="p-2 border">{row.PAY}</td>
+                        <td className="p-2 border">{row.AccountNo}</td>
+                        <td className="p-2 border">{row.BankName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {importData.length > 100 && (
+                <p className="text-sm text-gray-500 text-center mt-2">
+                  Showing first 100 of {importData.length} records
+                </p>
+              )}
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+              <button
+                onClick={() => setShowImportPreview(false)}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmImport}
+                className="px-5 py-2.5 rounded-lg bg-blue-700 text-white font-bold hover:bg-blue-800 shadow-lg shadow-blue-700/20 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <Upload size={18} />
+                Confirm Import ({importData.length} records)
+              </button>
+            </div>
           </div>
         </div>
       )}
