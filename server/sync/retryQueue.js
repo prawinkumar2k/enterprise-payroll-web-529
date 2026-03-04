@@ -1,13 +1,13 @@
 
 /**
- * RetryQueue — Persistent background retry for failed secondary DB writes
+ * RetryQueue — Background retry for failed MySQL operations
  *
- * When MySQL is available but SQLite mirror write fails (or vice versa),
+ * When a MySQL write fails due to a transient connection issue,
  * the operation is enqueued here and retried at a configurable interval.
  * This ensures eventual consistency without crashing the request cycle.
  */
 
-import sqliteManager from '../database/sqliteManager.js';
+import mysqlPool from '../db.js';
 
 const RETRY_INTERVAL_MS = parseInt(process.env.SYNC_RETRY_INTERVAL || '5000', 10);
 const MAX_RETRIES = 10;
@@ -21,12 +21,12 @@ class RetryQueue {
 
     /**
      * Enqueue a failed write for later retry.
-     * @param {{ sql: string, params: any[], target: 'sqlite'|'mysql', timestamp: number }} op
+     * @param {{ sql: string, params: any[], target: string, timestamp: number }} op
      */
     enqueue(op) {
         const entry = { ...op, retries: 0, enqueuedAt: Date.now() };
         this._queue.push(entry);
-        console.log(`[RetryQueue] Queued ${op.target} write for retry. Queue size: ${this._queue.length}`);
+        console.log(`[RetryQueue] Queued MySQL write for retry. Queue size: ${this._queue.length}`);
     }
 
     /**
@@ -70,16 +70,12 @@ class RetryQueue {
 
         for (const op of pending) {
             try {
-                if (op.target === 'sqlite') {
-                    await sqliteManager.execute(op.sql, op.params || []);
-                    console.log(`[RetryQueue] ✓ SQLite retry succeeded after ${op.retries + 1} attempt(s).`);
-                }
-                // Future: add mysql target for reverse sync
+                await mysqlPool.execute(op.sql, op.params || []);
+                console.log(`[RetryQueue] ✓ MySQL retry succeeded after ${op.retries + 1} attempt(s).`);
             } catch (err) {
                 const nextRetry = op.retries + 1;
                 if (nextRetry < MAX_RETRIES) {
                     failed.push({ ...op, retries: nextRetry });
-                    // console.warn(`[RetryQueue] Retry ${nextRetry}/${MAX_RETRIES} failed for ${op.target}:`, err.message);
                 } else {
                     console.error(`[RetryQueue] ❌ Dropping operation after ${MAX_RETRIES} retries:`, op.sql?.slice(0, 80));
                 }

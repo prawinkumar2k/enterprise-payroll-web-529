@@ -1,4 +1,4 @@
-# ── Client Deployment ─────────────────────────────────────────
+# ── Client Deployment (Frontend Nginx serving React SPA) ──────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,7 +8,7 @@ metadata:
     app: payroll-client
     tier: frontend
 spec:
-  replicas: 2          # stateless – can scale freely
+  replicas: 2          # Stateless — scale freely for high traffic
   selector:
     matchLabels:
       app: payroll-client
@@ -28,32 +28,32 @@ spec:
         runAsGroup: 101
       containers:
         - name: client
-          image: ghcr.io/GITHUB_OWNER/GITHUB_REPO/payroll-client:IMAGE_TAG
+          image: localhost:5000/payroll-client:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
           resources:
             requests:
-              cpu: 50m
+              cpu: 100m
               memory: 64Mi
             limits:
-              cpu: 500m
-              memory: 128Mi
+              cpu: 1000m
+              memory: 256Mi
           livenessProbe:
             httpGet:
               path: /
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 30
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
-      imagePullSecrets:
-        - name: ghcr-secret
+            timeoutSeconds: 5
 ---
 # ── Client Service ────────────────────────────────────────────
 apiVersion: v1

@@ -1,19 +1,16 @@
 
 /**
- * DualDB — Production-Grade Unified Database Abstraction Layer
+ * DualDB — MySQL-Only Database Abstraction Layer (Production)
  *
  * Architecture:
- *   - All controllers import ONLY this module
- *   - Automatic MySQL ↔ SQLite failover
- *   - Atomic dual-write (write to both DBs on every mutation)
- *   - Failed secondary writes are queued and retried automatically
- *   - No 500 crashes due to DB unavailability
+ *   - All controllers import ONLY this module (via dbManager.js re-export)
+ *   - MySQL is the sole database backend
+ *   - Automatic reconnection on connection loss
  *   - Full runtime immunity: structured responses always returned
+ *   - Compatible API surface — no controller changes needed
  */
 
 import mysqlPool from '../db.js';
-import sqliteManager from './sqliteManager.js';
-import retryQueue from '../sync/retryQueue.js';
 import { randomUUID } from 'crypto';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -21,7 +18,7 @@ import { randomUUID } from 'crypto';
 // ────────────────────────────────────────────────────────────────────────────
 const state = {
     mysqlAvailable: false,
-    sqliteAvailable: false,
+    sqliteAvailable: false,  // Always false — kept for API compatibility
     initialized: false,
 };
 
@@ -35,44 +32,14 @@ function isConnectionError(err) {
     return CONNECTION_ERRORS.has(err?.code) || err?.errno === 1045;
 }
 
-/**
- * Translate MySQL-dialect SQL to SQLite-compatible SQL.
- * The dualDB layer handles this at the top level so neither
- * sqliteManager nor controllers need to worry about dialect differences.
- */
-function _mysqlToSqlite(sql) {
-    if (!sql) return sql;
-    return sql
-        .replace(/FOR UPDATE/gi, '')
-        .replace(/`([^`]+)`/g, '"$1"')      // backtick → double-quote identifiers
-        .replace(/\bADD COLUMN IF NOT EXISTS\b/gi, 'ADD COLUMN IF NOT EXISTS') // SQLite 3.37+ supports this
-        .replace(/CAST\(([^)]+?)\s+AS\s+DECIMAL\(\d+,\s*\d+\)\)/gi, 'CAST($1 AS NUMERIC)')
-        .replace(/CAST\(([^)]+?)\s+AS\s+SIGNED\)/gi, 'CAST($1 AS INTEGER)')
-        .replace(/\bNOW\(\)/gi, "datetime('now','localtime')")
-        .replace(/\bCURDATE\(\)/gi, "date('now','localtime')")
-        .replace(/\bCURRENT_TIMESTAMP\b/gi, "datetime('now','localtime')")
-        .replace(/\bIF\s*\(([^,]+),\s*([^,]+),\s*([^)]+)\)/gi, 'IIF($1,$2,$3)')
-        .replace(/\bGROUP_CONCAT\(([^)]+)\s+SEPARATOR\s+'([^']+)'\)/gi, "GROUP_CONCAT($1,'$2')")
-        .replace(/\bON\s+DUPLICATE\s+KEY\s+UPDATE\b/gi, 'ON CONFLICT DO UPDATE SET')
-        .replace(/ON\s+CONFLICT\s+DO\s+UPDATE\s+SET\s+(.*?)\s+WHERE/gis, 'ON CONFLICT DO UPDATE SET $1 WHERE');
-}
-
 // ────────────────────────────────────────────────────────────────────────────
 // UUID & Timestamp Utilities (production sync primitives)
 // ────────────────────────────────────────────────────────────────────────────
 
-/**
- * Generate a v4 UUID suitable for use as a sync key.
- * Always use this instead of DB auto-increment IDs for cross-DB sync.
- */
 function generateUUID() {
     return randomUUID();
 }
 
-/**
- * Ensure a data object has a UUID field before insert.
- * Usage: const data = dualDB.ensureUUID({ empno: '101', sname: 'John' })
- */
 function ensureUUID(data, field = 'uuid') {
     if (!data[field]) {
         return { ...data, [field]: randomUUID() };
@@ -80,31 +47,18 @@ function ensureUUID(data, field = 'uuid') {
     return data;
 }
 
-/**
- * Last-Write-Wins conflict resolver.
- * Compares updated_at timestamps from both DBs and returns the winner.
- * Returns 'mysql' | 'sqlite' | 'equal'
- */
-function resolveConflict(mysqlRow, sqliteRow) {
-    if (!mysqlRow) return 'sqlite';
-    if (!sqliteRow) return 'mysql';
-
-    const mysqlTime = new Date(mysqlRow.updated_at || mysqlRow.UpdatedAt || 0).getTime();
-    const sqliteTime = new Date(sqliteRow.updated_at || 0).getTime();
-
-    if (mysqlTime > sqliteTime) return 'mysql';
-    if (sqliteTime > mysqlTime) return 'sqlite';
+function resolveConflict(rowA, rowB) {
+    if (!rowA) return 'B';
+    if (!rowB) return 'A';
+    const timeA = new Date(rowA.updated_at || 0).getTime();
+    const timeB = new Date(rowB.updated_at || 0).getTime();
+    if (timeA > timeB) return 'A';
+    if (timeB > timeA) return 'B';
     return 'equal';
 }
 
 /**
  * UPSERT — conflict-safe write using UUID as key.
- * If a row with the same uuid already exists, Last-Write-Wins applies.
- * Use this for sync operations instead of raw INSERT.
- *
- * @param {string} table - Table name (e.g., 'empdet')
- * @param {object} data - Row data. Must include `uuid` and `updated_at`.
- * @returns {Promise<object>} - { action: 'inserted'|'updated'|'skipped', uuid }
  */
 async function upsert(table, data) {
     if (!data.uuid) data.uuid = randomUUID();
@@ -112,15 +66,12 @@ async function upsert(table, data) {
 
     const uuid = data.uuid;
 
-    // Check if record exists in primary DB
     const [existing] = await query(`SELECT uuid, updated_at FROM ${table} WHERE uuid = ?`, [uuid]);
     const existingRow = existing?.[0];
 
     if (existingRow) {
-        // Apply Last-Write-Wins
         const winner = resolveConflict({ updated_at: existingRow.updated_at }, { updated_at: data.updated_at });
-        if (winner === 'mysql') {
-            // Existing DB record is newer — skip this write
+        if (winner === 'A') {
             return { action: 'skipped', uuid, reason: 'existing_is_newer' };
         }
     }
@@ -142,48 +93,53 @@ async function upsert(table, data) {
 // Initialization — Called once at server startup
 // ────────────────────────────────────────────────────────────────────────────
 async function init() {
-    console.log('[DualDB] Initializing databases...');
+    console.log('[DualDB] Initializing MySQL database...');
 
-    // 1. Init SQLite (always try first — it's local and fast)
+    // Test MySQL connectivity
     try {
-        await sqliteManager.initSchema();
-        state.sqliteAvailable = true;
-        console.log('✓ [DualDB] SQLite ready.');
+        const conn = await mysqlPool.getConnection();
+        conn.release();
+        state.mysqlAvailable = true;
+        console.log('✓ [DualDB] MySQL connected successfully.');
     } catch (err) {
-        console.error('[DualDB] SQLite init failed:', err.message);
-        state.sqliteAvailable = false;
+        state.mysqlAvailable = false;
+        console.error(`[DualDB] MySQL connection FAILED: ${err.code || err.message}`);
+        console.error('[DualDB] Server will retry MySQL on each request.');
+        // Start background reconnection probe
+        _startReconnectProbe();
     }
 
-    // 2. Test MySQL connectivity (skip if DISABLE_MYSQL=true)
-    if (process.env.DISABLE_MYSQL === 'true') {
-        state.mysqlAvailable = false;
-        console.log('[DualDB] MySQL disabled via DISABLE_MYSQL=true. Running in SQLite-only mode.');
-    } else {
+    state.initialized = true;
+    console.log(`[DualDB] Mode: MYSQL_ONLY (Production)`);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Background MySQL reconnection probe
+// ────────────────────────────────────────────────────────────────────────────
+let _reconnectTimer = null;
+
+function _startReconnectProbe() {
+    if (_reconnectTimer) return;
+    _reconnectTimer = setInterval(async () => {
+        if (state.mysqlAvailable) {
+            clearInterval(_reconnectTimer);
+            _reconnectTimer = null;
+            return;
+        }
         try {
             const conn = await mysqlPool.getConnection();
             conn.release();
             state.mysqlAvailable = true;
-            console.log('✓ [DualDB] MySQL connected.');
-        } catch (err) {
-            state.mysqlAvailable = false;
-            console.warn(`[DualDB] MySQL unavailable (${err.code || err.message}). Running in SQLite-only mode.`);
+            console.log('✓ [DualDB] MySQL reconnected!');
+            clearInterval(_reconnectTimer);
+            _reconnectTimer = null;
+        } catch {
+            // Still down — keep probing
         }
-    }
-
-    // 3. Start background retry worker only if MySQL is active
-    if (state.mysqlAvailable) {
-        retryQueue.startWorker();
-    }
-
-    state.initialized = true;
-    console.log(`[DualDB] Mode: ${state.mysqlAvailable ? 'DUAL (MySQL primary + SQLite mirror)' : 'SQLITE-ONLY (fast local mode)'}`);
+    }, 10000); // Probe every 10 seconds
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Internal MySQL availability probe (non-blocking)
-// ────────────────────────────────────────────────────────────────────────────
 async function _probeMySQL() {
-    if (process.env.DISABLE_MYSQL === 'true') return false;
     try {
         const conn = await mysqlPool.getConnection();
         conn.release();
@@ -191,187 +147,116 @@ async function _probeMySQL() {
         return true;
     } catch {
         state.mysqlAvailable = false;
+        _startReconnectProbe();
         return false;
     }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// QUERY — Read Operation
-// Strategy: MySQL primary → SQLite fallback on failure
+// QUERY — Read Operation (MySQL only)
 // ────────────────────────────────────────────────────────────────────────────
 async function query(sql, params = []) {
     const cleanSql = sql?.trim() || '';
     const cleanParams = _sanitizeParams(params);
 
-    // MySQL path
-    if (state.mysqlAvailable) {
-        try {
-            const [rows] = await mysqlPool.query(cleanSql, cleanParams);
-            return [rows ?? [], []];
-        } catch (err) {
-            if (isConnectionError(err)) {
-                console.warn('[DualDB] MySQL read failed, falling back to SQLite:', err.code);
-                state.mysqlAvailable = false;
-                _probeMySQL(); // Re-probe in background
-            } else {
-                // Non-connection error — log and fall through to SQLite
-                console.error('[DualDB] MySQL query error:', err.message);
-            }
+    if (!state.mysqlAvailable) {
+        // Try a quick reconnect before failing
+        const reconnected = await _probeMySQL();
+        if (!reconnected) {
+            console.error('[DualDB] MySQL unavailable for query. Returning empty result.');
+            return [[], []];
         }
     }
 
-    // SQLite fallback (translate MySQL dialect first)
-    if (state.sqliteAvailable) {
-        try {
-            return await sqliteManager.query(_mysqlToSqlite(cleanSql), cleanParams);
-        } catch (err) {
-            console.error('[DualDB] SQLite query error:', err.message);
+    try {
+        const [rows] = await mysqlPool.query(cleanSql, cleanParams);
+        return [rows ?? [], []];
+    } catch (err) {
+        if (isConnectionError(err)) {
+            console.warn('[DualDB] MySQL connection lost:', err.code);
+            state.mysqlAvailable = false;
+            _startReconnectProbe();
+            return [[], []];
         }
+        // Real query error — bubble up
+        console.error('[DualDB] MySQL query error:', err.message);
+        throw err;
     }
-
-    // Both DBs failed — return safe empty result
-    console.error('[DualDB] All databases unavailable for query. Returning empty result.');
-    return [[], []];
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// EXECUTE — Write Operation (Atomic Dual Write)
-// Strategy:
-//   - Write MySQL first (primary)
-//   - Write SQLite second (mirror)
-//   - If primary fails → rollback, queue for retry
-//   - If mirror fails → queue SQLite retry only
+// EXECUTE — Write Operation (MySQL only)
 // ────────────────────────────────────────────────────────────────────────────
 async function execute(sql, params = []) {
     const cleanSql = sql?.trim() || '';
     const cleanParams = _sanitizeParams(params);
 
-    let mysqlResult = null;
-
-    // ── MySQL Primary Write ──
-    if (state.mysqlAvailable) {
-        try {
-            const [result] = await mysqlPool.execute(cleanSql, cleanParams);
-            mysqlResult = { insertId: result.insertId, affectedRows: result.affectedRows };
-        } catch (err) {
-            if (isConnectionError(err)) {
-                console.warn('[DualDB] MySQL write failed, switching to SQLite-only:', err.code);
-                state.mysqlAvailable = false;
-                _probeMySQL(); // Background reconnect probe
-            } else {
-                // Actual query error (constraint violation, bad SQL, etc.)
-                throw err; // Bubble up — this is a real error
-            }
+    if (!state.mysqlAvailable) {
+        const reconnected = await _probeMySQL();
+        if (!reconnected) {
+            throw new Error('MySQL database unavailable for write operation.');
         }
     }
 
-    // ── SQLite Mirror Write (translate MySQL dialect) ──
-    if (state.sqliteAvailable) {
-        try {
-            const sqliteResult = await sqliteManager.execute(_mysqlToSqlite(cleanSql), cleanParams);
-
-            // If MySQL succeeded: return MySQL result (has real insertId from cluster)
-            // If MySQL failed: return SQLite result
-            return mysqlResult ?? sqliteResult;
-
-        } catch (err) {
-            if (mysqlResult) {
-                // MySQL OK but SQLite failed → queue SQLite retry
-                console.warn('[DualDB] SQLite mirror write failed, queuing for retry:', err.message);
-                retryQueue.enqueue({ sql: cleanSql, params: cleanParams, target: 'sqlite', timestamp: Date.now() });
-                return mysqlResult; // MySQL succeeded — return that result
-            } else {
-                // Both failed — throw
-                console.error('[DualDB] Both DBs failed on execute:', err.message);
-                throw new Error('Database write failed on all available backends.');
-            }
+    try {
+        const [result] = await mysqlPool.execute(cleanSql, cleanParams);
+        return { insertId: result.insertId, affectedRows: result.affectedRows };
+    } catch (err) {
+        if (isConnectionError(err)) {
+            console.warn('[DualDB] MySQL write connection lost:', err.code);
+            state.mysqlAvailable = false;
+            _startReconnectProbe();
+            throw new Error('MySQL database connection lost during write.');
         }
+        throw err; // Real error (constraint, bad SQL, etc.)
     }
-
-    // Only MySQL available and it succeeded
-    if (mysqlResult) {
-        // Queue SQLite sync for later
-        retryQueue.enqueue({ sql: cleanSql, params: cleanParams, target: 'sqlite', timestamp: Date.now() });
-        return mysqlResult;
-    }
-
-    throw new Error('No database available for write operation.');
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// TRANSACTION — Atomic multi-statement block
+// TRANSACTION — Atomic multi-statement block (MySQL only)
 // ────────────────────────────────────────────────────────────────────────────
 async function transaction(callback) {
-    if (state.mysqlAvailable) {
-        const conn = await mysqlPool.getConnection();
-        try {
-            await conn.beginTransaction();
-            const result = await callback({
-                query: async (sql, params) => {
-                    const [rows] = await conn.query(sql, _sanitizeParams(params));
-                    return [rows ?? [], []];
-                },
-                execute: async (sql, params) => {
-                    const [res] = await conn.execute(sql, _sanitizeParams(params));
-                    return { insertId: res.insertId, affectedRows: res.affectedRows };
-                },
-            });
-            await conn.commit();
-            conn.release();
-            return result;
-        } catch (err) {
-            try { await conn.rollback(); } catch { }
-            conn.release();
-            if (isConnectionError(err)) {
-                state.mysqlAvailable = false;
-                return _sqliteTransaction(callback);
-            }
-            throw err;
-        }
-    }
-
-    return _sqliteTransaction(callback);
-}
-
-async function _sqliteTransaction(callback) {
-    await sqliteManager.ensureInitialized();
+    const conn = await mysqlPool.getConnection();
     try {
-        sqliteManager.db.exec('BEGIN TRANSACTION');
+        await conn.beginTransaction();
         const result = await callback({
-            query: async (sql, params) => sqliteManager.query(_mysqlToSqlite(sql), _sanitizeParams(params)),
-            execute: async (sql, params) => sqliteManager.execute(_mysqlToSqlite(sql), _sanitizeParams(params)),
+            query: async (sql, params) => {
+                const [rows] = await conn.query(sql, _sanitizeParams(params));
+                return [rows ?? [], []];
+            },
+            execute: async (sql, params) => {
+                const [res] = await conn.execute(sql, _sanitizeParams(params));
+                return { insertId: res.insertId, affectedRows: res.affectedRows };
+            },
         });
-        sqliteManager.db.exec('COMMIT');
-        sqliteManager.saveToDisk();
+        await conn.commit();
+        conn.release();
         return result;
     } catch (err) {
-        try { sqliteManager.db.exec('ROLLBACK'); } catch { }
+        try { await conn.rollback(); } catch { }
+        conn.release();
+        if (isConnectionError(err)) {
+            state.mysqlAvailable = false;
+            _startReconnectProbe();
+        }
         throw err;
     }
 }
 
-
-
 // ────────────────────────────────────────────────────────────────────────────
-// GET CONNECTION — Returns a unified connection interface for transactional code.
-// MySQL: real connection from pool
-// SQLite: delegate to sqliteManager.getConnection() which provides the same API
+// GET CONNECTION — Returns a MySQL connection from pool
 // ────────────────────────────────────────────────────────────────────────────
 async function getConnection() {
-    if (state.mysqlAvailable) {
-        try {
-            const conn = await mysqlPool.getConnection();
-            return conn;
-        } catch (err) {
-            if (isConnectionError(err)) {
-                state.mysqlAvailable = false;
-            }
+    try {
+        const conn = await mysqlPool.getConnection();
+        return conn;
+    } catch (err) {
+        if (isConnectionError(err)) {
+            state.mysqlAvailable = false;
+            _startReconnectProbe();
         }
+        throw err;
     }
-
-    // sqliteManager.getConnection() returns a shim with:
-    // beginTransaction(), commit(), rollback(), query(), execute(), release()
-    return sqliteManager.getConnection();
 }
 
 
@@ -382,11 +267,11 @@ async function getSyncHealth() {
     const tables = ['userdetails', 'empdet', 'emppay', 'staffattendance', 'app_settings'];
     const report = {
         mysqlAvailable: state.mysqlAvailable,
-        sqliteAvailable: state.sqliteAvailable,
-        mode: state.mysqlAvailable ? (state.sqliteAvailable ? 'DUAL' : 'MYSQL_ONLY') : 'OFFLINE',
-        pendingRetries: retryQueue.getQueueSize(),
+        sqliteAvailable: false,
+        mode: state.mysqlAvailable ? 'MYSQL_ONLY' : 'OFFLINE',
+        pendingRetries: 0,
         tables: [],
-        healthy: true,
+        healthy: state.mysqlAvailable,
     };
 
     for (const table of tables) {
@@ -397,20 +282,6 @@ async function getSyncHealth() {
                 const [[row]] = await mysqlPool.query(`SELECT COUNT(*) as count FROM \`${table}\``);
                 entry.mysqlCount = row?.count ?? 0;
             } catch { entry.mysqlCount = 'ERROR'; }
-        }
-
-        if (state.sqliteAvailable) {
-            try {
-                const [rows] = await sqliteManager.query(`SELECT COUNT(*) as count FROM "${table}"`);
-                entry.sqliteCount = rows?.[0]?.count ?? 0;
-            } catch { entry.sqliteCount = 'ERROR'; }
-        }
-
-        if (entry.mysqlCount !== null && entry.sqliteCount !== null &&
-            entry.mysqlCount !== 'ERROR' && entry.sqliteCount !== 'ERROR' &&
-            entry.mysqlCount !== entry.sqliteCount) {
-            entry.mismatch = true;
-            report.healthy = false;
         }
 
         report.tables.push(entry);
@@ -434,7 +305,6 @@ function getState() {
     return { ...state };
 }
 
-// ── Compatibility shims (drop-in replacement for dbManager) ──
 async function exec(sql) {
     return execute(sql, []);
 }
@@ -452,13 +322,12 @@ export default {
     getSyncHealth,
     getState,
 
-    // ── Sync Primitives (Production UUID + LWW conflict resolution) ──
-    generateUUID,          // Generate a v4 UUID
-    ensureUUID,            // Add uuid field to data object if missing
-    resolveConflict,       // Last-Write-Wins: compare updated_at timestamps
-    upsert,                // Conflict-safe INSERT with LWW logic
+    // Sync Primitives
+    generateUUID,
+    ensureUUID,
+    resolveConflict,
+    upsert,
 
-    // Legacy compatibility
-    getRawInstance: () => sqliteManager.getRawInstance(),
+    // Legacy compatibility — returns null (no SQLite)
+    getRawInstance: () => null,
 };
-

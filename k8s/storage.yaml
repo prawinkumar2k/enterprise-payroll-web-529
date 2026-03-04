@@ -1,16 +1,57 @@
-# ── SQLite Persistent Volume (host-path, k3s local-path) ──────
+# ── Persistent Storage for Enterprise Payroll (MySQL-Only) ─────
+
+# ── MySQL Data Volume ──────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-data-pv
+  labels:
+    type: local
+    app: payroll-mysql
+spec:
+  storageClassName: manual-mysql
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /opt/payroll/mysql-data
+    type: DirectoryOrCreate
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: sqlite-data-pvc
+  name: mysql-data-pvc
   namespace: payroll
 spec:
+  storageClassName: manual-mysql
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path   # k3s built-in
   resources:
     requests:
-      storage: 20Gi
+      storage: 50Gi
+  selector:
+    matchLabels:
+      type: local
+      app: payroll-mysql
+---
+# ── Backups Volume ─────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: backups-pv
+  labels:
+    type: local
+    app: payroll-backup
+spec:
+  storageClassName: manual-backup
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /opt/payroll/backups
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -18,9 +59,13 @@ metadata:
   name: backups-pvc
   namespace: payroll
 spec:
+  storageClassName: manual-backup
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 50Gi
+  selector:
+    matchLabels:
+      type: local
+      app: payroll-backup

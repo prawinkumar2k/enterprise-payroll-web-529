@@ -43,7 +43,7 @@ import { notFound } from './middleware/commonMiddleware.js';
 import metricsService from './services/metrics.service.js';
 import backupService from './services/backup.service.js';
 import { verifyAuditIntegrity } from './utils/auditLogger.js';
-import { verifyDataIntegrity } from './services/diagnostics.service.js';
+// verifyDataIntegrity removed — was SQLite-only (PRAGMA integrity_check)
 import syncWorker from './sync/syncWorker.js';
 import summaryService from './services/summary.service.js';
 import cache from './services/cache.service.js';
@@ -204,11 +204,8 @@ app.listen(PORT, HOST, async () => {
 
         metricsService.updateSystemMetrics(process.env.SAFE_MODE === 'true');
 
-        // 1. Data Integrity Check
-        try {
-            const integrity = await verifyDataIntegrity(dbManager.getRawInstance());
-            if (!integrity.valid) console.error(`[Integrity] Warning: ${integrity.reason}`);
-        } catch (e) { /* Non-fatal */ }
+        // 1. Data Integrity Check (MySQL handles its own integrity)
+        console.log('[Startup] MySQL-only mode — skipping SQLite integrity check.');
 
         // 2. Audit Chain Verification
         try {

@@ -1,32 +1,38 @@
-# ── Traefik IngressRoute (k3s default ingress controller) ─────
-# Replace payroll.yourdomain.com with your real domain or use IP
-# TLS cert provisioned automatically by Traefik + Let's Encrypt
----
+# ── Traefik IngressRoute (K3s built-in ingress controller) ─────
+# Works with both IP address and domain name
+# ───────────────────────────────────────────────────────────────
+
+# ── HTTPS IngressRoute (main traffic) ─────────────────────────
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: payroll-ingress
+  name: payroll-ingress-secure
   namespace: payroll
 spec:
   entryPoints:
     - websecure
   routes:
-    # ── API → backend server ──────────────────────────────
-    - match: Host(`payroll.yourdomain.com`) && PathPrefix(`/api`)
+    # API → backend server
+    - match: PathPrefix(`/api`)
       kind: Rule
       services:
         - name: payroll-server-svc
-          port: 5001
-    # ── Frontend ─────────────────────────────────────────
-    - match: Host(`payroll.yourdomain.com`)
+          port: 5005
+      middlewares:
+        - name: api-ratelimit
+        - name: security-headers
+    # Frontend → client
+    - match: PathPrefix(`/`)
       kind: Rule
       services:
         - name: payroll-client-svc
           port: 8080
-  tls:
-    certResolver: letsencrypt        # configured in Traefik startup
+      middlewares:
+        - name: security-headers
+  tls: {}   # Use default Traefik TLS (self-signed initially, then Let's Encrypt with domain)
+
 ---
-# ── HTTP → HTTPS redirect ─────────────────────────────────────
+# ── HTTP IngressRoute (redirect to HTTPS or serve directly) ──
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
@@ -36,14 +42,50 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`payroll.yourdomain.com`)
+    # API → backend (also on HTTP for initial testing without SSL)
+    - match: PathPrefix(`/api`)
       kind: Rule
-      middlewares:
-        - name: redirect-https
+      services:
+        - name: payroll-server-svc
+          port: 5005
+    # Frontend → client
+    - match: PathPrefix(`/`)
+      kind: Rule
       services:
         - name: payroll-client-svc
           port: 8080
+
 ---
+# ── Rate Limiting Middleware ──────────────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: api-ratelimit
+  namespace: payroll
+spec:
+  rateLimit:
+    average: 100        # 100 requests/sec average
+    burst: 200          # allow bursts up to 200
+    period: 1s
+
+---
+# ── Security Headers Middleware ───────────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: payroll
+spec:
+  headers:
+    frameDeny: true
+    contentTypeNosniff: true
+    browserXssFilter: true
+    referrerPolicy: "strict-origin-when-cross-origin"
+    customResponseHeaders:
+      X-Powered-By: ""
+
+---
+# ── HTTPS Redirect Middleware (enable after SSL setup) ────────
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
@@ -53,32 +95,3 @@ spec:
   redirectScheme:
     scheme: https
     permanent: true
----
-# ── FALLBACK: Standard Nginx Ingress (if not using Traefik) ───
-# Comment out above and uncomment below if using nginx ingress controller
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: payroll-nginx-ingress
-#   namespace: payroll
-#   annotations:
-#     nginx.ingress.kubernetes.io/rewrite-target: /
-#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-# spec:
-#   ingressClassName: nginx
-#   tls:
-#     - hosts: [payroll.yourdomain.com]
-#       secretName: payroll-tls
-#   rules:
-#     - host: payroll.yourdomain.com
-#       http:
-#         paths:
-#           - path: /api
-#             pathType: Prefix
-#             backend:
-#               service: { name: payroll-server-svc, port: { number: 5001 } }
-#           - path: /
-#             pathType: Prefix
-#             backend:
-#               service: { name: payroll-client-svc, port: { number: 8080 } }

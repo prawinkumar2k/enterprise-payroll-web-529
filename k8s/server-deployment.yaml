@@ -1,4 +1,4 @@
-# ── Server Deployment ─────────────────────────────────────────
+# ── Server Deployment (Backend API + MySQL) ───────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,7 +8,7 @@ metadata:
     app: payroll-server
     tier: backend
 spec:
-  replicas: 1          # SQLite = single writer; scale via SQLite WAL or migrate to Postgres for multi-replica
+  replicas: 1
   selector:
     matchLabels:
       app: payroll-server
@@ -22,64 +22,64 @@ spec:
       labels:
         app: payroll-server
         tier: backend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5001"
-        prometheus.io/path: "/api/metrics"
     spec:
-      securityContext:
-        runAsUser: 1001
-        runAsGroup: 1001
-        fsGroup: 1001
+      initContainers:
+        # Wait for MySQL to be ready before starting server
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z payroll-mysql-svc 3306; do echo "Waiting for MySQL..."; sleep 3; done; echo "MySQL is ready!"']
       containers:
         - name: server
-          image: ghcr.io/GITHUB_OWNER/GITHUB_REPO/payroll-server:IMAGE_TAG
+          image: localhost:5000/payroll-server:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 5001
+            - containerPort: 5005
               name: http
           envFrom:
             - secretRef:
                 name: payroll-secrets
           volumeMounts:
-            - name: sqlite-data
-              mountPath: /app/data
             - name: backups
               mountPath: /app/backups
             - name: logs
               mountPath: /app/logs
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 500m
+              memory: 512Mi
             limits:
-              cpu: 2000m
-              memory: 1Gi
+              cpu: 4000m
+              memory: 4Gi
           livenessProbe:
             httpGet:
               path: /api/health
-              port: 5001
-            initialDelaySeconds: 30
-            periodSeconds: 30
+              port: 5005
+            initialDelaySeconds: 45
+            periodSeconds: 15
             failureThreshold: 3
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /api/health
-              port: 5001
-            initialDelaySeconds: 10
+              port: 5005
+            initialDelaySeconds: 20
             periodSeconds: 10
             failureThreshold: 3
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 5005
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
       volumes:
-        - name: sqlite-data
-          persistentVolumeClaim:
-            claimName: sqlite-data-pvc
         - name: backups
           persistentVolumeClaim:
             claimName: backups-pvc
         - name: logs
-          emptyDir: {}
-      imagePullSecrets:
-        - name: ghcr-secret
+          emptyDir:
+            sizeLimit: 500Mi
 ---
 # ── Server Service ───────────────────────────────────────────
 apiVersion: v1
@@ -92,6 +92,6 @@ spec:
     app: payroll-server
   ports:
     - name: http
-      port: 5001
-      targetPort: 5001
+      port: 5005
+      targetPort: 5005
   type: ClusterIP
