@@ -2,7 +2,12 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is not set. RBAC tests cannot run.');
+    process.exit(1);
+}
+
 
 async function testRBAC() {
     const BASE_URL = 'http://localhost:5001/api';

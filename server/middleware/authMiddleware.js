@@ -1,11 +1,25 @@
 import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
+
+if (!process.env.JWT_SECRET) {
+    throw new Error(
+        'FATAL: JWT_SECRET environment variable is not set. ' +
+        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const authenticate = async (req, res, next) => {
     try {
+        // Accept token from Authorization header OR ?token= query param (for file downloads)
+        let token;
         const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } else if (req.query.token) {
+            token = req.query.token;
+        }
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!token) {
             return res.status(401).json({
                 success: false,
                 message: 'Authentication required. No token provided.',
@@ -13,7 +27,6 @@ export const authenticate = async (req, res, next) => {
             });
         }
 
-        const token = authHeader.split(' ')[1];
 
         // Verify token
         const decoded = jwt.verify(token, JWT_SECRET);

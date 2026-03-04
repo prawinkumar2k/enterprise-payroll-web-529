@@ -22,8 +22,11 @@ import {
   Cloud,
   CloudOff,
   Database,
-  AlertCircle
+  AlertCircle,
+  Sun,
+  Moon
 } from "lucide-react";
+
 
 export default function DashboardLayout({
   children,
@@ -31,7 +34,11 @@ export default function DashboardLayout({
   userRole = "Admin",
   disableContentWrapper = false
 }) {
-  const { isEnabled, settings } = useSettings();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const effectiveRole = user.role || userRole;
+  const { isEnabled, settings, theme, toggleTheme } = useSettings();
+
+
   const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync, error } = useSync();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -39,6 +46,8 @@ export default function DashboardLayout({
   const [filesOpen, setFilesOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
+
   const [betaStatus, setBetaStatus] = useState(null);
   const [exporting, setExporting] = useState(false);
 
@@ -75,7 +84,7 @@ export default function DashboardLayout({
   };
 
   // DYNAMIC MENU ITEMS GENERATOR
-  const menuItems = [
+  const adminMenuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
     {
       id: "files",
@@ -115,8 +124,31 @@ export default function DashboardLayout({
     },
     { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
     { id: "license", label: "Licensing", icon: Database, href: "/license" },
-    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" }
+    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" },
+    // ── Finance Module (Phase 2) ──
+    {
+      id: "finance",
+      label: "FINANCE",
+      icon: BarChart3,
+      subItems: [
+        { id: "income", label: "💵 Income", href: "/income" },
+        { id: "expense", label: "💸 Expenses", href: "/expense" },
+        { id: "finance-dashboard", label: "📊 Finance Dashboard", href: "/finance/dashboard" },
+      ]
+    },
+    { id: "salary-revisions", label: "Salary Revisions", icon: ScrollText, href: "/salary-revisions" },
   ];
+
+  const employeeMenuItems = [
+    { id: "ess-dashboard", label: "ESS Home", icon: Home, href: "/employee/dashboard" },
+    { id: "my-payslips", label: "My Payslips", icon: Calculator, href: "/employee/dashboard" },
+    { id: "my-attendance", label: "My Attendance", icon: Calendar, href: "/employee/dashboard" },
+  ];
+
+  const menuItems = (effectiveRole?.toLowerCase() === 'employee') ? employeeMenuItems : adminMenuItems;
+
+
+
 
   const NavContent = () => (
     <nav className="flex-1 px-4 py-6 overflow-y-auto">
@@ -126,12 +158,14 @@ export default function DashboardLayout({
           const isActive = activeRoute === item.id || (item.subItems?.some(s => s.id === activeRoute));
 
           if (item.subItems) {
-            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : false));
+            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : (item.id === 'finance' ? financeOpen : false)));
             const toggleOpen = () => {
               if (item.id === 'files') setFilesOpen(!filesOpen);
               if (item.id === 'reports') setReportsOpen(!reportsOpen);
               if (item.id === 'attendance') setAttendanceOpen(!attendanceOpen);
+              if (item.id === 'finance') setFinanceOpen(!financeOpen);
             };
+
 
             return (
               <li key={item.id} className="space-y-1">
@@ -288,12 +322,57 @@ export default function DashboardLayout({
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-bold">Payroll Engine</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
+
+            {/* DB Mode Badge — always visible in header */}
+            <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === SYNC_MODES.OFFLINE
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+              : mode === 'DUAL'
+                ? 'bg-violet-500/10 border-violet-500/30 text-violet-500'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+              }`}>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${mode === SYNC_MODES.OFFLINE ? 'bg-amber-500' : mode === 'DUAL' ? 'bg-violet-500' : 'bg-emerald-500'
+                }`} />
+              {mode === SYNC_MODES.OFFLINE ? 'SQLite Only' : mode === 'DUAL' ? 'Dual DB' : 'Online'}
             </div>
           </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center hover:bg-muted transition-all text-muted-foreground"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20"
+              >
+                <User className="w-4 h-4 text-primary" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl p-2 z-[100] animate-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-2 border-b border-border/50 mb-1">
+                    <p className="text-xs font-black text-foreground truncate uppercase tracking-tighter">{user.name || user.username || 'User'}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{effectiveRole}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      window.location.href = '#/login';
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors text-xs font-bold uppercase tracking-wider"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
         </header>
 
         <main className="flex-1 w-full bg-background overflow-y-auto overflow-x-hidden relative px-4 sm:px-8 py-8">

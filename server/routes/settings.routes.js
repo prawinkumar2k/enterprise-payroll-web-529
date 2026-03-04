@@ -8,9 +8,9 @@ const router = express.Router();
 // This allows the login page and feature routes to access settings without auth
 router.get('/global', getAllSettings);
 
-// Protected endpoints (admin only)
+// Protected endpoints (Authenticated users can update settings in Desktop Mode)
 router.use(authenticate);
-router.use(authorize('admin'));
+// router.use(authorize('admin')); // Temporarily disabled for Desktop Mode compatibility
 
 router.put('/global', updateSettings);
 

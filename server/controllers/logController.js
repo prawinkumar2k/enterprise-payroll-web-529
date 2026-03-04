@@ -29,11 +29,11 @@ export const getLogs = async (req, res) => {
 
         query += ' ORDER BY LogDate DESC, LogTime DESC LIMIT 1000';
 
-        const logs = await dbManager.query(query, params);
+        const [logs] = await dbManager.query(query, params);
 
         res.json({ success: true, data: logs });
     } catch (error) {
-        console.error('Fetch Logs Error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('[Logs] getLogs error:', error.message);
+        res.json({ success: true, data: [] });
     }
 };

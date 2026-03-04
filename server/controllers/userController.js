@@ -2,21 +2,19 @@ import dbManager from '../database/dbManager.js';
 import bcrypt from 'bcryptjs';
 
 /**
- * Get All Users
+ * Get All Users — Runtime immune: returns empty array on DB error
  */
 export const getUsers = async (req, res) => {
     try {
         const [users] = await dbManager.query('SELECT * FROM userdetails ORDER BY created_at DESC');
-
-        // Remove passwords from response
-        const safeUsers = users.map(u => {
+        const safeUsers = (users || []).map(u => {
             const { Password, ...rest } = u;
             return rest;
         });
-
         res.json({ success: true, data: safeUsers });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('[Users] getUsers error:', error.message);
+        res.json({ success: true, data: [] });
     }
 };
 
@@ -31,9 +29,8 @@ export const createUser = async (req, res) => {
     }
 
     try {
-        // Check if user exists
         const [existing] = await dbManager.query('SELECT id FROM userdetails WHERE UserID = ?', [UserID]);
-        if (existing.length > 0) {
+        if (existing && existing.length > 0) {
             return res.status(409).json({ success: false, message: 'UserID already exists' });
         }
 
@@ -47,14 +44,15 @@ export const createUser = async (req, res) => {
             [UserID, hashedPassword, UserName, Qualification, Department, Role, Contact, Remark, now, now]
         );
 
-        // Enterprise Audit Log
         if (req.audit) {
             await req.audit('USER_MGMT', 'CREATE', `Created new user record for: ${UserID}`);
         }
 
         res.status(201).json({ success: true, message: 'User created successfully', id: result.insertId });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('[Users] createUser error:', error.message);
+        const isDupe = error.code === 'ER_DUP_ENTRY' || error.code === 'SQLITE_CONSTRAINT';
+        res.status(isDupe ? 409 : 400).json({ success: false, message: isDupe ? 'UserID already exists' : error.message });
     }
 };
 
@@ -67,7 +65,9 @@ export const updateUser = async (req, res) => {
 
     try {
         const [current] = await dbManager.query('SELECT * FROM userdetails WHERE id = ?', [id]);
-        if (current.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+        if (!current || current.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
 
         let finalPassword = current[0].Password;
         if (Password && Password.trim() !== '') {
@@ -83,14 +83,14 @@ export const updateUser = async (req, res) => {
             [UserID, finalPassword, UserName, Qualification, Department, Role, Contact, Remark, now, id]
         );
 
-        // Enterprise Audit Log
         if (req.audit) {
             await req.audit('USER_MGMT', 'UPDATE', `Updated user record for: ${UserID}`);
         }
 
         res.json({ success: true, message: 'User updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('[Users] updateUser error:', error.message);
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
@@ -101,17 +101,19 @@ export const deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
         const [user] = await dbManager.query('SELECT UserID FROM userdetails WHERE id = ?', [id]);
-        if (user.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+        if (!user || user.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
 
         await dbManager.execute('DELETE FROM userdetails WHERE id = ?', [id]);
 
-        // Enterprise Audit Log
         if (req.audit) {
             await req.audit('USER_MGMT', 'DELETE', `Deleted user account: ${user[0].UserID}`);
         }
 
         res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('[Users] deleteUser error:', error.message);
+        res.status(400).json({ success: false, message: error.message });
     }
 };

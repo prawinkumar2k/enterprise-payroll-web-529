@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Users,
@@ -29,6 +29,8 @@ import {
   CartesianGrid
 } from "recharts";
 import { toast } from "sonner";
+import { apiGet } from "../lib/apiClient";
+import { useQuery } from "@tanstack/react-query";
 
 function StatCard({ icon, label, value, subValue, type = "default" }) {
   const bgColors = {
@@ -60,29 +62,16 @@ export default function Dashboard() {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
   const [year, setYear] = useState(String(now.getFullYear()));
-  const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // useQuery with apiClient — auto-401 redirect, 60s cache
+  const { data: queryData, isLoading } = useQuery({
+    queryKey: ['dashboard-stats', month, year],
+    queryFn: () => apiGet(`/api/dashboard/stats?month=${month}&year=${year}`).then(r => r.data),
+    staleTime: 60 * 1000,
+    retry: 1,
+    onError: () => toast.error('Failed to load dashboard data'),
+  });
 
-  const fetchStats = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/dashboard/stats?month=${month}&year=${year}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-      }
-    } catch (error) {
-      toast.error("Failed to sync dashboard data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, [month, year]);
+  const data = queryData;
 
   if (!data && isLoading) {
     return (

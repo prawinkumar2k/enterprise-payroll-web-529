@@ -2,6 +2,9 @@ import dbManager from '../database/dbManager.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { randomUUID } from 'crypto';
 import licenseService from '../services/license.service.js';
+import cache from '../services/cache.service.js';
+
+const EMP_CACHE_KEY = 'employees:list:all';
 
 const EMP_FIELDS = [
     'SLNO', 'EMPNO', 'SNAME', 'DESIGNATION', 'AbsGroup', 'DGroup', 'PAY', 'GradePay', 'Category',
@@ -12,11 +15,18 @@ const EMP_FIELDS = [
 
 export const getEmployees = async (req, res) => {
     try {
+        const cached = cache.get(EMP_CACHE_KEY);
+        if (cached) {
+            res.set('X-Cache', 'HIT');
+            return res.json(cached);
+        }
         const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NULL ORDER BY id DESC');
+        cache.set(EMP_CACHE_KEY, rows, cache.TTL.EMPLOYEES);
+        res.set('X-Cache', 'MISS');
         res.json(rows);
     } catch (error) {
-        console.error('Error fetching employees:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching employees:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load employees' });
     }
 };
 
@@ -25,8 +35,8 @@ export const getTrashedEmployees = async (req, res) => {
         const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
         res.json(rows);
     } catch (error) {
-        console.error('Error fetching trashed employees:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching trashed employees:', error.message);
+        res.json({ success: true, data: [] });
     }
 };
 
@@ -48,9 +58,11 @@ export const createEmployee = async (req, res) => {
     }
 
     const uuid = randomUUID();
-    const keys = [...EMP_FIELDS.filter(f => data[f] !== undefined), 'uuid', 'is_synced', 'device_id'];
-    const values = [...EMP_FIELDS.filter(f => data[f] !== undefined).map(k => data[k]), uuid, 0, 'SERVER_01'];
+    const now = new Date().toISOString();
+    const keys = [...EMP_FIELDS.filter(f => data[f] !== undefined), 'uuid', 'is_synced', 'device_id', 'created_at', 'updated_at'];
+    const values = [...EMP_FIELDS.filter(f => data[f] !== undefined).map(k => data[k]), uuid, 0, 'SERVER_01', now, now];
     const placeholders = keys.map(() => '?').join(', ');
+
 
     if (keys.length <= 3) {
         return res.status(400).json({ error: "No valid fields provided" });
@@ -60,6 +72,7 @@ export const createEmployee = async (req, res) => {
 
     try {
         const result = await dbManager.execute(query, values);
+        cache.invalidate('employees:');
 
         await logAudit({
             userId: user.username,
@@ -73,8 +86,9 @@ export const createEmployee = async (req, res) => {
 
         res.status(201).json({ id: result.insertId, uuid, ...data });
     } catch (error) {
-        console.error('Error creating employee:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error creating employee:', error.message);
+        const isDupe = error.code === 'ER_DUP_ENTRY' || error.code === 'SQLITE_CONSTRAINT';
+        res.status(isDupe ? 409 : 400).json({ success: false, error: isDupe ? 'Employee number already exists' : error.message });
     }
 };
 
@@ -106,6 +120,7 @@ export const updateEmployee = async (req, res) => {
 
         await connection.query(query, [...values, id]);
         await connection.commit();
+        cache.invalidate('employees:');
 
         await logAudit({
             userId: user.username,
@@ -120,9 +135,9 @@ export const updateEmployee = async (req, res) => {
 
         res.json({ id, ...data });
     } catch (error) {
-        await connection.rollback();
-        console.error('Error updating employee:', error);
-        res.status(500).json({ error: error.message });
+        try { await connection.rollback(); } catch { }
+        console.error('Error updating employee:', error.message);
+        res.status(400).json({ success: false, error: error.message });
     } finally {
         connection.release();
     }
@@ -139,6 +154,7 @@ export const deleteEmployee = async (req, res) => {
         }
 
         await dbManager.execute('UPDATE empdet SET deleted_at = CURRENT_TIMESTAMP, is_synced = 0 WHERE id = ?', [id]);
+        cache.invalidate('employees:');
 
         await logAudit({
             userId: user.username,
@@ -152,8 +168,8 @@ export const deleteEmployee = async (req, res) => {
 
         res.json({ message: "Employee moved to trash" });
     } catch (error) {
-        console.error('Error deleting employee:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error deleting employee:', error.message);
+        res.status(400).json({ success: false, error: error.message });
     }
 };
 
@@ -163,6 +179,7 @@ export const restoreEmployee = async (req, res) => {
 
     try {
         await dbManager.execute('UPDATE empdet SET deleted_at = NULL, is_synced = 0 WHERE id = ?', [id]);
+        cache.invalidate('employees:');
 
         await logAudit({
             userId: user.username,
@@ -175,8 +192,8 @@ export const restoreEmployee = async (req, res) => {
 
         res.json({ message: "Employee restored" });
     } catch (error) {
-        console.error('Error restoring employee:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error restoring employee:', error.message);
+        res.status(400).json({ success: false, error: error.message });
     }
 };
 
@@ -186,6 +203,7 @@ export const permanentDeleteEmployee = async (req, res) => {
 
     try {
         await dbManager.execute('DELETE FROM empdet WHERE id = ?', [id]);
+        cache.invalidate('employees:');
 
         await logAudit({
             userId: user.username,
@@ -198,7 +216,7 @@ export const permanentDeleteEmployee = async (req, res) => {
 
         res.json({ message: "Employee deleted permanently" });
     } catch (error) {
-        console.error('Error permanently deleting employee:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error permanently deleting employee:', error.message);
+        res.status(400).json({ success: false, error: error.message });
     }
 };

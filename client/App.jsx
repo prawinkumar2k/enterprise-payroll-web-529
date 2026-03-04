@@ -37,19 +37,35 @@ import LicenseManagement from "./pages/LicenseManagement";
 import Placeholder from "./pages/Placeholder";
 import PrintReportView from "./pages/PrintReportView";
 import NotFound from "./pages/NotFound";
+// ── New Phase 2 Pages ──
+import IncomePage from "./pages/IncomePage";
+import ExpensePage from "./pages/ExpensePage";
+import FinanceDashboard from "./pages/FinanceDashboard";
+import SalaryRevisionPage from "./pages/SalaryRevisionPage";
+import ESSDashboard from "./pages/ESSDashboard";
+
 
 import { useNavigate, Navigate } from "react-router-dom";
 import { useSettings } from "./context/SettingsContext";
 
+
 const queryClient = new QueryClient();
 
 /**
+ * ProtectedRoute - Enforces authentication
+ */
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+};
+
+/**
  * FeatureRoute - Higher-Order Component for Settings-Driven access
- * Redirects to dashboard if the feature token is disabled in settings.
  */
 const FeatureRoute = ({ children, feature }) => {
   const { isEnabled, isLoading } = useSettings();
-  if (isLoading) return null; // Wait for settings
+  if (isLoading) return null;
   if (!feature) return children;
   return isEnabled(feature) ? children : <Navigate to="/dashboard" replace />;
 };
@@ -69,32 +85,43 @@ const App = () =>
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
               {/* Dashboard & Authenticated Routes */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/employees" element={<Employees />} />
-              <Route path="/salary" element={<Salary />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/employee/dashboard" element={<ProtectedRoute><ESSDashboard /></ProtectedRoute>} />
+
+              <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+              <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+              <Route path="/salary" element={<ProtectedRoute><Salary /></ProtectedRoute>} />
+
 
               {/* Attendance Module */}
-              <Route path="/attendance/daily" element={<FeatureRoute feature="enable_attendance"><DailyAttendance /></FeatureRoute>} />
-              <Route path="/attendance/monthly" element={<FeatureRoute feature="enable_attendance"><MonthlyAttendance /></FeatureRoute>} />
-              <Route path="/attendance/reports" element={<FeatureRoute feature="enable_attendance"><AttendanceReports /></FeatureRoute>} />
+              <Route path="/attendance/daily" element={<ProtectedRoute><FeatureRoute feature="enable_attendance"><DailyAttendance /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/attendance/monthly" element={<ProtectedRoute><FeatureRoute feature="enable_attendance"><MonthlyAttendance /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/attendance/reports" element={<ProtectedRoute><FeatureRoute feature="enable_attendance"><AttendanceReports /></FeatureRoute></ProtectedRoute>} />
 
               {/* Reports */}
-              <Route path="/reports/pay-bill" element={<FeatureRoute feature="enable_pay_bill"><PayBillDetail /></FeatureRoute>} />
-              <Route path="/reports/pay-bill-abstract" element={<FeatureRoute feature="enable_pay_bill"><PayBillAbstract /></FeatureRoute>} />
-              <Route path="/reports/abstract-1" element={<FeatureRoute feature="enable_abstract_1"><Abstract1 /></FeatureRoute>} />
-              <Route path="/reports/abstract-2" element={<FeatureRoute feature="enable_abstract_2"><Abstract2 /></FeatureRoute>} />
-              <Route path="/reports/bank-statement" element={<FeatureRoute feature="enable_bank_statement"><BankStatement /></FeatureRoute>} />
-              <Route path="/reports/pay-certificate" element={<FeatureRoute feature="enable_pay_certificate"><PayCertificate /></FeatureRoute>} />
-              <Route path="/reports/staff-report" element={<FeatureRoute feature="enable_staff_report"><StaffReport /></FeatureRoute>} />
+              <Route path="/reports/pay-bill" element={<ProtectedRoute><FeatureRoute feature="enable_pay_bill"><PayBillDetail /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/pay-bill-abstract" element={<ProtectedRoute><FeatureRoute feature="enable_pay_bill"><PayBillAbstract /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/abstract-1" element={<ProtectedRoute><FeatureRoute feature="enable_abstract_1"><Abstract1 /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/abstract-2" element={<ProtectedRoute><FeatureRoute feature="enable_abstract_2"><Abstract2 /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/bank-statement" element={<ProtectedRoute><FeatureRoute feature="enable_bank_statement"><BankStatement /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/pay-certificate" element={<ProtectedRoute><FeatureRoute feature="enable_pay_certificate"><PayCertificate /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/reports/staff-report" element={<ProtectedRoute><FeatureRoute feature="enable_staff_report"><StaffReport /></FeatureRoute></ProtectedRoute>} />
 
               {/* Print Engine Dedicated Route */}
-              <Route path="/print-report" element={<PrintReportView />} />
+              <Route path="/print-report" element={<ProtectedRoute><PrintReportView /></ProtectedRoute>} />
 
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/license" element={<LicenseManagement />} />
-              <Route path="/sync" element={<SyncDashboard />} />
-              <Route path="/audit-logs" element={<AuditLogs />} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/license" element={<ProtectedRoute><LicenseManagement /></ProtectedRoute>} />
+              <Route path="/sync" element={<ProtectedRoute><SyncDashboard /></ProtectedRoute>} />
+              <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
+
+              {/* ── Finance Module (Phase 2) ── */}
+              <Route path="/income" element={<ProtectedRoute><IncomePage /></ProtectedRoute>} />
+              <Route path="/expense" element={<ProtectedRoute><ExpensePage /></ProtectedRoute>} />
+              <Route path="/finance/dashboard" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
+
+              {/* ── Salary Revisions ── */}
+              <Route path="/salary-revisions" element={<ProtectedRoute><SalaryRevisionPage /></ProtectedRoute>} />
 
               {/* Website Pages */}
               <Route path="/about" element={<About />} />
