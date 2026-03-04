@@ -1,0 +1,84 @@
+# ── Traefik IngressRoute (k3s default ingress controller) ─────
+# Replace payroll.yourdomain.com with your real domain or use IP
+# TLS cert provisioned automatically by Traefik + Let's Encrypt
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: payroll-ingress
+  namespace: payroll
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    # ── API → backend server ──────────────────────────────
+    - match: Host(`payroll.yourdomain.com`) && PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: payroll-server-svc
+          port: 5001
+    # ── Frontend ─────────────────────────────────────────
+    - match: Host(`payroll.yourdomain.com`)
+      kind: Rule
+      services:
+        - name: payroll-client-svc
+          port: 8080
+  tls:
+    certResolver: letsencrypt        # configured in Traefik startup
+---
+# ── HTTP → HTTPS redirect ─────────────────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: payroll-ingress-http
+  namespace: payroll
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`payroll.yourdomain.com`)
+      kind: Rule
+      middlewares:
+        - name: redirect-https
+      services:
+        - name: payroll-client-svc
+          port: 8080
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: payroll
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+# ── FALLBACK: Standard Nginx Ingress (if not using Traefik) ───
+# Comment out above and uncomment below if using nginx ingress controller
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: payroll-nginx-ingress
+#   namespace: payroll
+#   annotations:
+#     nginx.ingress.kubernetes.io/rewrite-target: /
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+# spec:
+#   ingressClassName: nginx
+#   tls:
+#     - hosts: [payroll.yourdomain.com]
+#       secretName: payroll-tls
+#   rules:
+#     - host: payroll.yourdomain.com
+#       http:
+#         paths:
+#           - path: /api
+#             pathType: Prefix
+#             backend:
+#               service: { name: payroll-server-svc, port: { number: 5001 } }
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service: { name: payroll-client-svc, port: { number: 8080 } }

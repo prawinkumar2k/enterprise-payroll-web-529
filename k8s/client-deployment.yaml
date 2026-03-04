@@ -1,0 +1,71 @@
+# ── Client Deployment ─────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payroll-client
+  namespace: payroll
+  labels:
+    app: payroll-client
+    tier: frontend
+spec:
+  replicas: 2          # stateless – can scale freely
+  selector:
+    matchLabels:
+      app: payroll-client
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: payroll-client
+        tier: frontend
+    spec:
+      securityContext:
+        runAsUser: 101    # nginx user
+        runAsGroup: 101
+      containers:
+        - name: client
+          image: ghcr.io/GITHUB_OWNER/GITHUB_REPO/payroll-client:IMAGE_TAG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: ghcr-secret
+---
+# ── Client Service ────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: payroll-client-svc
+  namespace: payroll
+spec:
+  selector:
+    app: payroll-client
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

@@ -1,0 +1,26 @@
+# ── SQLite Persistent Volume (host-path, k3s local-path) ──────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-data-pvc
+  namespace: payroll
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path   # k3s built-in
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backups-pvc
+  namespace: payroll
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 50Gi

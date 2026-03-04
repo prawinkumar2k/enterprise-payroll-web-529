@@ -1,0 +1,97 @@
+# ── Server Deployment ─────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payroll-server
+  namespace: payroll
+  labels:
+    app: payroll-server
+    tier: backend
+spec:
+  replicas: 1          # SQLite = single writer; scale via SQLite WAL or migrate to Postgres for multi-replica
+  selector:
+    matchLabels:
+      app: payroll-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: payroll-server
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5001"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: server
+          image: ghcr.io/GITHUB_OWNER/GITHUB_REPO/payroll-server:IMAGE_TAG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+              name: http
+          envFrom:
+            - secretRef:
+                name: payroll-secrets
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /app/data
+            - name: backups
+              mountPath: /app/backups
+            - name: logs
+              mountPath: /app/logs
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: sqlite-data-pvc
+        - name: backups
+          persistentVolumeClaim:
+            claimName: backups-pvc
+        - name: logs
+          emptyDir: {}
+      imagePullSecrets:
+        - name: ghcr-secret
+---
+# ── Server Service ───────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: payroll-server-svc
+  namespace: payroll
+spec:
+  selector:
+    app: payroll-server
+  ports:
+    - name: http
+      port: 5001
+      targetPort: 5001
+  type: ClusterIP
