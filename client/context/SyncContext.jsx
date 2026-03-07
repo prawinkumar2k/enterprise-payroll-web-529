@@ -1,31 +1,35 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { getApiUrl } from '../lib/api';
 import syncService from '../lib/SyncService';
 
 const SyncContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const SYNC_MODES = {
     ONLINE: 'ONLINE',
     OFFLINE: 'OFFLINE',
     SYNCING: 'SYNCING'
 };
 
-export function SyncProvider({ children }) {
-    const [mode, setMode] = useState(SYNC_MODES.ONLINE);
-    const [lastSync, setLastSync] = useState(localStorage.getItem('last_successful_sync'));
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [pendingCount, setPendingCount] = useState(0);
-    const [error, setError] = useState(null);
+function syncReducer(state, action) {
+    switch (action.type) {
+        case 'SET_FIELD': return { ...state, [action.field]: action.value };
+        default: return state;
+    }
+}
 
-    // Progress State
-    const [progress, setProgress] = useState({
-        stage: null, // pushing | pulling | verifying | finalizing
-        current: 0,
-        total: 0,
-        percent: 0
+export function SyncProvider({ children }) {
+    const [state, dispatch] = useReducer(syncReducer, {
+        mode: SYNC_MODES.ONLINE,
+        lastSync: localStorage.getItem('last_successful_sync'),
+        isSyncing: false,
+        pendingCount: 0,
+        error: null,
+        progress: { stage: null, current: 0, total: 0, percent: 0 }
     });
+    const { mode, lastSync, isSyncing, pendingCount, error, progress } = state;
 
     const pollTimer = useRef(null);
 
@@ -42,23 +46,23 @@ export function SyncProvider({ children }) {
                 // Backend is the authority
                 const backendMode = response.data.mode || SYNC_MODES.ONLINE;
                 if (backendMode === SYNC_MODES.SYNCING && !isSyncing) {
-                    setIsSyncing(true);
+                    dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: true });
                 } else if (backendMode !== SYNC_MODES.SYNCING && isSyncing && !syncService.isSyncing) {
-                    setIsSyncing(false);
+                    dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: false });
                 }
 
-                setMode(backendMode);
-                setLastSync(response.data.lastSyncTime);
+                dispatch({ type: 'SET_FIELD', field: 'mode', value: backendMode });
+                dispatch({ type: 'SET_FIELD', field: 'lastSync', value: response.data.lastSyncTime });
             }
 
             // Check local pending count
             const count = await syncService.getPendingCount();
-            setPendingCount(count);
+            dispatch({ type: 'SET_FIELD', field: 'pendingCount', value: count });
 
         } catch (err) {
             console.error('[SyncContext] Poll failed:', err.message);
             if (err.code === 'ERR_NETWORK') {
-                setMode(SYNC_MODES.OFFLINE);
+                dispatch({ type: 'SET_FIELD', field: 'mode', value: SYNC_MODES.OFFLINE });
             }
         }
     }, [isSyncing]);
@@ -83,24 +87,24 @@ export function SyncProvider({ children }) {
     const triggerManualSync = async () => {
         if (isSyncing) return;
 
-        setIsSyncing(true);
-        setError(null);
-        setProgress({ stage: 'starting', current: 0, total: 1, percent: 5 });
+        dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: true });
+        dispatch({ type: 'SET_FIELD', field: 'error', value: null });
+        dispatch({ type: 'SET_FIELD', field: 'progress', value: { stage: 'starting', current: 0, total: 1, percent: 5 } });
 
         try {
             await syncService.performManualSync((p) => {
-                setProgress(p);
+                dispatch({ type: 'SET_FIELD', field: 'progress', value: p });
             });
             await fetchStatus();
-            setProgress({ stage: 'completed', current: 1, total: 1, percent: 100 });
-            setTimeout(() => setProgress({ stage: null, current: 0, total: 0, percent: 0 }), 3000);
+            dispatch({ type: 'SET_FIELD', field: 'progress', value: { stage: 'completed', current: 1, total: 1, percent: 100 } });
+            setTimeout(() => dispatch({ type: 'SET_FIELD', field: 'progress', value: { stage: null, current: 0, total: 0, percent: 0 } }), 3000);
         } catch (err) {
-            setError(err.message || 'Sync failed');
-            setIsSyncing(false);
-            setProgress({ stage: null, current: 0, total: 0, percent: 0 });
+            dispatch({ type: 'SET_FIELD', field: 'error', value: err.message || 'Sync failed' });
+            dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: false });
+            dispatch({ type: 'SET_FIELD', field: 'progress', value: { stage: null, current: 0, total: 0, percent: 0 } });
         } finally {
             // isSyncing will be updated by poll or finalized here if poll hasn't run
-            setTimeout(() => setIsSyncing(syncService.isSyncing), 500);
+            setTimeout(() => dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: syncService.isSyncing }), 500);
         }
     };
 
@@ -120,6 +124,7 @@ export function SyncProvider({ children }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSync = () => {
     const context = useContext(SyncContext);
     if (!context) throw new Error('useSync must be used within a SyncProvider');

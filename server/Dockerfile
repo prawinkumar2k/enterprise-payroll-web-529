@@ -35,18 +35,18 @@ RUN mkdir -p /app/logs /app/data && \
 
 # Environment
 ENV NODE_ENV=production \
-    PORT=5001 \
+    PORT=5005 \
     HOST=0.0.0.0
 
 # Switch to non-root user
 USER nodejs
 
 # Expose application port
-EXPOSE 5001
+EXPOSE 5005
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:5005/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start application
 CMD ["node", "index.js"]

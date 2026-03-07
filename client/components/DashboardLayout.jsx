@@ -1,124 +1,42 @@
 
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useReducer, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
 import { useSettings } from "../context/SettingsContext";
 import { useSync, SYNC_MODES } from "../context/SyncContext";
 import {
   Settings,
   Menu,
-  X,
-  LogOut,
   Users,
   Calculator,
   FileText,
   ScrollText,
   Home,
   ChevronDown,
-  Bell,
-  User,
   Calendar,
-  BarChart3,
   RefreshCw,
   Cloud,
   CloudOff,
   Database,
-  AlertCircle
+  AlertCircle,
+  LogOut,
+  Building2,
+  Shield,
+  Wallet,
 } from "lucide-react";
 
-export default function DashboardLayout({
-  children,
-  activeRoute = "dashboard",
-  userRole = "Admin",
-  disableContentWrapper = false
+function NavSidebar({
+  menuItems,
+  sidebarOpen,
+  mobileSidebarOpen,
+  setMobileSidebarOpen,
+  filesOpen, setFilesOpen,
+  reportsOpen, setReportsOpen,
+  attendanceOpen, setAttendanceOpen,
+  financeOpen, setFinanceOpen,
+  activeRoute
 }) {
-  const { isEnabled, settings } = useSettings();
-  const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync, error } = useSync();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [filesOpen, setFilesOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
-  const [attendanceOpen, setAttendanceOpen] = useState(false);
-  const [betaStatus, setBetaStatus] = useState(null);
-  const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/beta/status', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => setBetaStatus(data))
-      .catch(() => { });
-  }, []);
-
-  const handleExportDiagnostics = async () => {
-    setExporting(true);
-    try {
-      const res = await fetch('/api/beta/diagnostics/export', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`Diagnostic package exported to Desktop: ${data.fileName}`);
-      } else {
-        alert('Failed to export diagnostics: ' + data.message);
-      }
-    } catch (e) {
-      alert('Network error during diagnostic export.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // DYNAMIC MENU ITEMS GENERATOR
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
-    {
-      id: "files",
-      label: "FILES",
-      icon: FileText,
-      subItems: [
-        { id: "users", label: "User Details", href: "/users" },
-        { id: "audit-logs", label: "Log Details", href: "/audit-logs" }
-      ]
-    },
-    { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
-    { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
-    {
-      id: "attendance",
-      label: "ATTENDANCE",
-      icon: Calendar,
-      feature: 'enable_attendance',
-      subItems: [
-        { id: "attendance-daily", label: "Daily Attendance", href: "/attendance/daily" },
-        { id: "attendance-monthly", label: "Monthly Attendance", href: "/attendance/monthly" },
-        { id: "attendance-reports", label: "Attendance Reports", href: "/attendance/reports" }
-      ]
-    },
-    {
-      id: "reports",
-      label: "REPORTS",
-      icon: ScrollText,
-      subItems: [
-        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
-        { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
-        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
-        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
-        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
-        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
-        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
-      ]
-    },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
-    { id: "license", label: "Licensing", icon: Database, href: "/license" },
-    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" }
-  ];
-
-  const NavContent = () => (
+  return (
     <nav className="flex-1 px-4 py-6 overflow-y-auto">
       <ul className="space-y-2">
         {menuItems.map((item) => {
@@ -126,11 +44,12 @@ export default function DashboardLayout({
           const isActive = activeRoute === item.id || (item.subItems?.some(s => s.id === activeRoute));
 
           if (item.subItems) {
-            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : false));
+            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : (item.id === 'finance' ? financeOpen : false)));
             const toggleOpen = () => {
               if (item.id === 'files') setFilesOpen(!filesOpen);
               if (item.id === 'reports') setReportsOpen(!reportsOpen);
               if (item.id === 'attendance') setAttendanceOpen(!attendanceOpen);
+              if (item.id === 'finance') setFinanceOpen(!financeOpen);
             };
 
             return (
@@ -187,29 +106,198 @@ export default function DashboardLayout({
       </ul>
     </nav>
   );
+}
+
+const initialLayoutState = {
+  sidebarOpen: true,
+  mobileSidebarOpen: false,
+  userMenuOpen: false,
+  filesOpen: false,
+  reportsOpen: false,
+  attendanceOpen: false,
+  financeOpen: false,
+  exporting: false,
+};
+
+function layoutReducer(state, action) {
+  switch (action.type) {
+    case 'SET': return { ...state, [action.field]: action.value };
+    default: return state;
+  }
+}
+
+export default function DashboardLayout({
+  children,
+  activeRoute = "dashboard"
+}) {
+  const { settings } = useSettings();
+  const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync } = useSync();
+  const [state, dispatch] = useReducer(layoutReducer, initialLayoutState);
+  const navigate = useNavigate();
+  const profileMenuRef = useRef(null);
+
+  // Get user info from localStorage
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
+  })();
+  const currentUser = {
+    username: storedUser.username || storedUser.UserID || 'User',
+    name: storedUser.name || storedUser.UserName || storedUser.username || 'User',
+    role: storedUser.role || storedUser.Role || 'employee',
+    company_name: storedUser.company_name || storedUser.company_code || 'Company',
+    company_code: storedUser.company_code || '',
+  };
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        dispatch({ type: 'SET', field: 'userMenuOpen', value: false });
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const roleLabel = {
+    admin: 'Administrator',
+    hr_officer: 'HR Officer',
+    accountant: 'Accountant',
+    auditor: 'Auditor',
+    employee: 'Employee',
+    super_admin: 'Super Admin',
+  }[currentUser.role] || currentUser.role;
+  const { sidebarOpen, mobileSidebarOpen, userMenuOpen, filesOpen, reportsOpen, attendanceOpen, financeOpen, exporting } = state;
+
+  const { data: betaStatus } = useQuery({
+    queryKey: ['beta-status'],
+    queryFn: () => fetch('/api/beta/status', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(res => res.json()),
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const handleExportDiagnostics = async () => {
+    dispatch({ type: 'SET', field: 'exporting', value: true });
+    try {
+      const res = await fetch('/api/beta/diagnostics/export', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Diagnostic package exported to Desktop: ${data.fileName}`);
+      } else {
+        alert('Failed to export diagnostics: ' + data.message);
+      }
+    } catch {
+      alert('Network error during diagnostic export.');
+    } finally {
+      dispatch({ type: 'SET', field: 'exporting', value: false });
+    }
+  };
+
+  // DYNAMIC MENU ITEMS GENERATOR
+  const menuItems = [
+    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+    {
+      id: "files",
+      label: "FILES",
+      icon: FileText,
+      subItems: [
+        { id: "users", label: "User Details", href: "/users" },
+        { id: "audit-logs", label: "Log Details", href: "/audit-logs" }
+      ]
+    },
+    { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
+    { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
+    {
+      id: "attendance",
+      label: "ATTENDANCE",
+      icon: Calendar,
+      feature: 'enable_attendance',
+      subItems: [
+        { id: "attendance-daily", label: "Daily Attendance", href: "/attendance/daily" },
+        { id: "attendance-monthly", label: "Monthly Attendance", href: "/attendance/monthly" },
+        { id: "attendance-reports", label: "Attendance Reports", href: "/attendance/reports" }
+      ]
+    },
+    {
+      id: "reports",
+      label: "REPORTS",
+      icon: ScrollText,
+      subItems: [
+        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
+        { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
+        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
+        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
+        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
+        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
+        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
+      ]
+    },
+    {
+      id: "finance",
+      label: "FINANCE",
+      icon: Wallet,
+      subItems: [
+        { id: "income",  label: "Income",  href: "/income",  feature: 'enable_income'  },
+        { id: "expense", label: "Expense", href: "/expense", feature: 'enable_expense' },
+      ]
+    },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "license", label: "Licensing", icon: Database, href: "/license" },
+    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" }
+  ];
 
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
       {/* 1. Desktop Sidebar */}
-      <aside className={`bg-sidebar border-r border-sidebar-border flex flex-col h-full transition-all duration-300 flex-shrink-0 hidden lg:flex ${sidebarOpen ? "w-64" : "w-20"}`}>
+      <aside className={`bg-sidebar border-r border-sidebar-border flex flex-col h-full transition-all duration-300 flex-shrink-0 max-lg:hidden ${sidebarOpen ? "w-64" : "w-20"}`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border flex-shrink-0">
           {sidebarOpen ? (
             <Link to="/" className="flex items-center gap-3">
               <div className="w-8 h-8 bg-sidebar-primary rounded flex items-center justify-center flex-shrink-0">
-                <span className="text-sidebar-primary-foreground font-bold">S</span>
+                <span className="text-sidebar-primary-foreground font-bold">
+                  {currentUser.company_name.charAt(0).toUpperCase()}
+                </span>
               </div>
-              <span className="font-bold text-sidebar-foreground truncate tracking-tight">{settings.org_name || "Enterprise Payroll"}</span>
+              <span className="font-bold text-sidebar-foreground truncate tracking-tight">{currentUser.company_name}</span>
             </Link>
           ) : (
             <Link to="/" className="flex items-center justify-center w-full">
               <div className="w-8 h-8 bg-sidebar-primary rounded flex items-center justify-center">
-                <span className="text-sidebar-primary-foreground font-bold">P</span>
+                <span className="text-sidebar-primary-foreground font-bold">
+                  {currentUser.company_name.charAt(0).toUpperCase()}
+                </span>
               </div>
             </Link>
           )}
         </div>
 
-        <NavContent />
+        <NavSidebar
+          menuItems={menuItems}
+          sidebarOpen={sidebarOpen}
+          mobileSidebarOpen={mobileSidebarOpen}
+          setMobileSidebarOpen={(v) => dispatch({ type: 'SET', field: 'mobileSidebarOpen', value: v })}
+          filesOpen={filesOpen}
+          setFilesOpen={(v) => dispatch({ type: 'SET', field: 'filesOpen', value: v })}
+          reportsOpen={reportsOpen}
+          setReportsOpen={(v) => dispatch({ type: 'SET', field: 'reportsOpen', value: v })}
+          attendanceOpen={attendanceOpen}
+          setAttendanceOpen={(v) => dispatch({ type: 'SET', field: 'attendanceOpen', value: v })}
+          financeOpen={financeOpen}
+          setFinanceOpen={(v) => dispatch({ type: 'SET', field: 'financeOpen', value: v })}
+          activeRoute={activeRoute}
+        />
 
         {sidebarOpen && (
           <div className="p-4 border-t border-sidebar-border mt-auto space-y-3">
@@ -284,14 +372,80 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0 z-30">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-secondary rounded-lg transition">
+            <button onClick={() => dispatch({ type: 'SET', field: 'sidebarOpen', value: !sidebarOpen })} className="p-2 hover:bg-secondary rounded-lg transition">
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-bold">Payroll Engine</h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                onClick={() => dispatch({ type: 'SET', field: 'userMenuOpen', value: !userMenuOpen })}
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary-foreground font-bold text-sm">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-none">
+                  <span className="text-sm font-semibold text-foreground">{currentUser.name}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">{currentUser.company_name}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                  {/* User Info Header */}
+                  <div className="px-4 py-3 bg-muted/30 border-b border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary-foreground font-bold">
+                          {currentUser.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-foreground truncate">{currentUser.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">@{currentUser.username}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company & Role Info */}
+                  <div className="px-4 py-3 space-y-2 border-b border-border">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Company</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{currentUser.company_name}</p>
+                        {currentUser.company_code && (
+                          <p className="text-[10px] text-muted-foreground font-mono">{currentUser.company_code}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Role</p>
+                        <p className="text-sm font-semibold text-foreground">{roleLabel}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="p-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

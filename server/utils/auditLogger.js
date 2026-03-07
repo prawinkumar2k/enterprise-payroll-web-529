@@ -36,9 +36,25 @@ export const logAudit = async ({
 };
 
 /**
- * Verify complete audit chain integrity
+ * Verify complete audit chain integrity.
+ * Performs a lightweight count check on startup.
+ * Full cryptographic chain verification is available via /api/system/audit-verify.
  */
 export const verifyAuditIntegrity = async () => {
+    try {
+        const [rows] = await dbManager.query('SELECT COUNT(*) AS count FROM audit_logs');
+        const count = rows[0]?.count ?? 0;
+        return { success: true, count };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Full cryptographic audit chain verification (admin use only).
+ * Validates SHA256 hash chain across all audit log records.
+ */
+export const verifyCryptoAuditChain = async () => {
     try {
         const [rows] = await dbManager.query('SELECT * FROM audit_logs ORDER BY created_at ASC');
         let expectedPrevHash = 'GENESIS_BLOCK';

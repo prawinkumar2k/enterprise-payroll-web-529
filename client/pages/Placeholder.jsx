@@ -27,7 +27,7 @@ export default function Placeholder() {
           <div className="bg-primary-50 rounded-lg p-4 text-sm text-foreground">
             <p className="font-semibold mb-2">Path: {location.pathname}</p>
             <p className="text-muted-foreground">
-              Share your requirements and we'll build it!
+              Share your requirements and we&apos;ll build it!
             </p>
           </div>
         </div>

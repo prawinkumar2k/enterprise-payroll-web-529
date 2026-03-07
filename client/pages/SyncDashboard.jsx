@@ -4,7 +4,6 @@ import {
     RefreshCw,
     Cloud,
     CloudOff,
-    Database,
     History,
     AlertTriangle,
     CheckCircle2,
@@ -19,7 +18,7 @@ import axios from "axios";
 import { getApiUrl } from "../lib/api";
 
 export default function SyncDashboard() {
-    const { mode, lastSync, isSyncing, triggerManualSync, error: syncError, refreshStatus } = useSync();
+    const { mode, lastSync, isSyncing, triggerManualSync, refreshStatus } = useSync();
     const [logs, setLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
     const [resetting, setResetting] = useState(false);

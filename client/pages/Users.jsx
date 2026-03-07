@@ -1,31 +1,90 @@
-import { useState, useEffect } from "react";
+import { useReducer, useEffect, useState } from "react";
 import {
     Plus, Search, Edit, Trash, Eye,
-    ChevronLeft, ChevronRight, X, User as UserIcon
+    X
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
+import Pagination from "../components/Pagination";
+import { usersReducer, initialUsersState } from "@/src/reducers/usersReducer";
+
+function UserFormModal({ isModalOpen, viewMode, currentUser, formData, dispatch, closeModal, handeSubmit }) {
+    if (!isModalOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] sm:p-4 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div className="bg-white w-full sm:max-w-xl lg:max-w-2xl sm:rounded-3xl shadow-2xl h-[92vh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300">
+                <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-5 sm:p-6 border-b border-gray-100 flex-shrink-0">
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                            {viewMode ? "User Details" : currentUser ? "Edit User Record" : "Create New User"}
+                        </h2>
+                        <p className="text-xs text-gray-400 font-medium tracking-tight">Enterprise Access Management</p>
+                    </div>
+                    <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-colors">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5 sm:p-8 scrollbar-thin">
+                    <form id="user-form" onSubmit={handeSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-userid" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">User ID *</label>
+                            <input id="user-userid" type="text" disabled={viewMode || currentUser} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60" value={formData.UserID} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'UserID', value: e.target.value })} required />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-username" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Username *</label>
+                            <input id="user-username" type="text" disabled={viewMode} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60" value={formData.UserName} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'UserName', value: e.target.value })} required />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-password" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Password {!currentUser && "*"}</label>
+                            <input id="user-password" type="password" disabled={viewMode} placeholder={currentUser ? "Leave empty to keep current" : "Secure Password"} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium" value={formData.Password} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Password', value: e.target.value })} required={!currentUser} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-role" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Role *</label>
+                            <select id="user-role" disabled={viewMode} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60 cursor-pointer" value={formData.Role} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Role', value: e.target.value })} required>
+                                <option value="">Select Role</option>
+                                <option value="admin">Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="employee">Employee</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-dept" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Department</label>
+                            <input id="user-dept" type="text" disabled={viewMode} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60" value={formData.Department} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Department', value: e.target.value })} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="user-contact" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Contact No.</label>
+                            <input id="user-contact" type="text" disabled={viewMode} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60" value={formData.Contact} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Contact', value: e.target.value })} />
+                        </div>
+                        <div className="col-span-full space-y-1.5">
+                            <label htmlFor="user-qualification" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Qualification</label>
+                            <input id="user-qualification" type="text" disabled={viewMode} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60" value={formData.Qualification} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Qualification', value: e.target.value })} />
+                        </div>
+                        <div className="col-span-full space-y-1.5">
+                            <label htmlFor="user-remark" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Remark</label>
+                            <textarea id="user-remark" disabled={viewMode} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium h-28 sm:h-32 resize-none disabled:opacity-60" value={formData.Remark} onChange={e => dispatch({ type: 'SET_FORM_FIELD', field: 'Remark', value: e.target.value })} />
+                        </div>
+                    </form>
+                </div>
+                {!viewMode && (
+                    <div className="p-5 sm:p-6 bg-gray-50 sm:bg-white border-t border-gray-100 flex gap-3 sm:justify-end flex-shrink-0">
+                        <button type="button" onClick={closeModal} className="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-95">Cancel</button>
+                        <button form="user-form" type="submit" className="flex-1 sm:flex-none px-8 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-700 transition-all active:scale-95">{currentUser ? "Update User" : "Save Record"}</button>
+                    </div>
+                )}
+                {viewMode && (
+                    <div className="p-5 sm:p-6 bg-gray-50 sm:bg-white border-t border-gray-100 flex flex-shrink-0">
+                        <button onClick={closeModal} className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all">Close Details</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function Users() {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [roleFilter, setRoleFilter] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null); // For Edit/View
-    const [viewMode, setViewMode] = useState(false); // Read-only mode
-
-    // Form State
-    const [formData, setFormData] = useState({
-        UserID: "",
-        UserName: "",
-        Password: "",
-        Role: "",
-        Department: "",
-        Qualification: "",
-        Contact: "",
-        Remark: ""
-    });
+    const [state, dispatch] = useReducer(usersReducer, initialUsersState);
+    const { users, loading, searchTerm, roleFilter, isModalOpen, currentUser, viewMode, formData } = state;
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 100;
 
     useEffect(() => {
         fetchUsers();
@@ -33,21 +92,21 @@ export default function Users() {
 
     const fetchUsers = async () => {
         try {
-            setLoading(true);
+            dispatch({ type: 'SET_FIELD', field: 'loading', value: true });
             const token = localStorage.getItem("token");
             const res = await fetch("/api/users", {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
             if (data.success) {
-                setUsers(data.data);
+                dispatch({ type: 'SET_FIELD', field: 'users', value: data.data });
             } else {
-                setError(data.message);
+                dispatch({ type: 'SET_FIELD', field: 'error', value: data.message });
             }
-        } catch (err) {
-            setError("Failed to fetch users");
+        } catch {
+            dispatch({ type: 'SET_FIELD', field: 'error', value: 'Failed to fetch users' });
         } finally {
-            setLoading(false);
+            dispatch({ type: 'SET_FIELD', field: 'loading', value: false });
         }
     };
 
@@ -73,7 +132,7 @@ export default function Users() {
             } else {
                 alert(data.message);
             }
-        } catch (err) {
+        } catch {
             alert("Operation failed");
         }
     };
@@ -87,29 +146,17 @@ export default function Users() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchUsers();
-        } catch (err) {
+        } catch {
             alert("Delete failed");
         }
     };
 
     const openModal = (user = null, view = false) => {
-        setCurrentUser(user);
-        setViewMode(view);
-        if (user) {
-            setFormData({ ...user, Password: "" }); // Password empty on edit
-        } else {
-            setFormData({
-                UserID: "", UserName: "", Password: "", Role: "",
-                Department: "", Qualification: "", Contact: "", Remark: ""
-            });
-        }
-        setIsModalOpen(true);
+        dispatch({ type: 'OPEN_MODAL', user, viewMode: view });
     };
 
     const closeModal = () => {
-        setIsModalOpen(false);
-        setCurrentUser(null);
-        setViewMode(false);
+        dispatch({ type: 'CLOSE_MODAL' });
     };
 
     // Filter Logic
@@ -119,6 +166,7 @@ export default function Users() {
         const matchesRole = roleFilter ? u.Role === roleFilter : true;
         return matchesSearch && matchesRole;
     });
+    const pagedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     return (
         <DashboardLayout activeRoute="users">
@@ -147,14 +195,14 @@ export default function Users() {
                             placeholder="Search by Username or UserID..."
                             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm sm:text-base"
                             value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
+                            onChange={e => dispatch({ type: 'SET_FIELD', field: 'searchTerm', value: e.target.value })}
                         />
                     </div>
                     <div className="flex flex-row gap-3 sm:gap-4">
                         <select
                             className="flex-1 lg:w-48 px-4 py-2.5 border border-gray-200 rounded-xl bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-sm cursor-pointer"
                             value={roleFilter}
-                            onChange={e => setRoleFilter(e.target.value)}
+                            onChange={e => dispatch({ type: 'SET_FIELD', field: 'roleFilter', value: e.target.value })}
                         >
                             <option value="">All Roles</option>
                             <option value="admin">Admin</option>
@@ -191,7 +239,7 @@ export default function Users() {
                                     ) : filteredUsers.length === 0 ? (
                                         <tr><td colSpan="5" className="p-12 text-center text-gray-400">No records found.</td></tr>
                                     ) : (
-                                        filteredUsers.map(user => (
+                                        pagedUsers.map(user => (
                                             <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
@@ -291,163 +339,26 @@ export default function Users() {
                             ))
                         )}
                     </div>
+                    <Pagination
+                        page={currentPage}
+                        totalPages={Math.ceil(filteredUsers.length / PAGE_SIZE)}
+                        total={filteredUsers.length}
+                        pageSize={PAGE_SIZE}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </div>
 
-            {/* Responsive Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[100] sm:p-4 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
-                    <div
-                        className="bg-white w-full sm:max-w-xl lg:max-w-2xl sm:rounded-3xl shadow-2xl h-[92vh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300"
-                    >
-                        {/* Modal Header */}
-                        <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-5 sm:p-6 border-b border-gray-100 flex-shrink-0">
-                            <div>
-                                <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-                                    {viewMode ? "User Details" : currentUser ? "Edit User Record" : "Create New User"}
-                                </h2>
-                                <p className="text-xs text-gray-400 font-medium tracking-tight">Enterprise Access Management</p>
-                            </div>
-                            <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-colors">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+            <UserFormModal
+                isModalOpen={isModalOpen}
+                viewMode={viewMode}
+                currentUser={currentUser}
+                formData={formData}
+                dispatch={dispatch}
+                closeModal={closeModal}
+                handeSubmit={handeSubmit}
+            />
 
-                        {/* Modal Body */}
-                        <div className="flex-1 overflow-y-auto p-5 sm:p-8 scrollbar-thin">
-                            <form id="user-form" onSubmit={handeSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">User ID *</label>
-                                    <input
-                                        type="text"
-                                        disabled={viewMode || currentUser}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60"
-                                        value={formData.UserID}
-                                        onChange={e => setFormData({ ...formData, UserID: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Username *</label>
-                                    <input
-                                        type="text"
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60"
-                                        value={formData.UserName}
-                                        onChange={e => setFormData({ ...formData, UserName: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
-                                        Password {!currentUser && "*"}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        disabled={viewMode}
-                                        placeholder={currentUser ? "Leave empty to keep current" : "Secure Password"}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                                        value={formData.Password}
-                                        onChange={e => setFormData({ ...formData, Password: e.target.value })}
-                                        required={!currentUser}
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Role *</label>
-                                    <select
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60 cursor-pointer"
-                                        value={formData.Role}
-                                        onChange={e => setFormData({ ...formData, Role: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Select Role</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="employee">Employee</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Department</label>
-                                    <input
-                                        type="text"
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60"
-                                        value={formData.Department}
-                                        onChange={e => setFormData({ ...formData, Department: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Contact No.</label>
-                                    <input
-                                        type="text"
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60"
-                                        value={formData.Contact}
-                                        onChange={e => setFormData({ ...formData, Contact: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="col-span-full space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Qualification</label>
-                                    <input
-                                        type="text"
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium disabled:opacity-60"
-                                        value={formData.Qualification}
-                                        onChange={e => setFormData({ ...formData, Qualification: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="col-span-full space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Remark</label>
-                                    <textarea
-                                        disabled={viewMode}
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium h-28 sm:h-32 resize-none disabled:opacity-60"
-                                        value={formData.Remark}
-                                        onChange={e => setFormData({ ...formData, Remark: e.target.value })}
-                                    />
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* Modal Footer */}
-                        {!viewMode && (
-                            <div className="p-5 sm:p-6 bg-gray-50 sm:bg-white border-t border-gray-100 flex gap-3 sm:justify-end flex-shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    form="user-form"
-                                    type="submit"
-                                    className="flex-1 sm:flex-none px-8 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-700 transition-all active:scale-95"
-                                >
-                                    {currentUser ? "Update User" : "Save Record"}
-                                </button>
-                            </div>
-                        )}
-                        {viewMode && (
-                            <div className="p-5 sm:p-6 bg-gray-50 sm:bg-white border-t border-gray-100 flex flex-shrink-0">
-                                <button
-                                    onClick={closeModal}
-                                    className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all"
-                                >
-                                    Close Details
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </DashboardLayout>
     );
 }

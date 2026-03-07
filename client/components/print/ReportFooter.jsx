@@ -8,7 +8,8 @@ import { useSettings } from '../../context/SettingsContext';
  * Repeats on every printed page. Displays signature grid and system info.
  */
 const ReportFooter = ({
-    printedDate = new Date()
+    printedDate = new Date(),
+    withSignature = true
 }) => {
     const { settings } = useSettings();
 
@@ -24,10 +25,10 @@ const ReportFooter = ({
 
     return (
         <div className="report-footer">
-            {sigs.length > 0 && (
+            {withSignature && sigs.length > 0 && (
                 <div className="print-signature-grid">
                     {sigs.map((label, idx) => (
-                        <div key={idx} className="print-sig-box">
+                        <div key={label || idx} className="print-sig-box">
                             <div className="print-sig-line"></div>
                             <div className="print-sig-label uppercase">{label}</div>
                         </div>

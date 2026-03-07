@@ -16,6 +16,7 @@ if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
     }
     return originalFetch(url, options);
   };
+  // eslint-disable-next-line no-console
   console.log('🚀 Desktop API Interceptor Active: Re-routing /api to localhost:5005');
 }
 

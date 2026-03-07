@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import Pagination from "@/components/Pagination";
 import { Search, Plus, Trash2, RefreshCw, X, Save, ArrowUpDown, AlertCircle, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { getApiUrl } from "../lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -13,26 +14,36 @@ const ALL_FIELDS = [
   "OD", "CL", "ML", "MaL", "RH", "SL", "LOP", "LopDate"
 ];
 
+// Table: exclude internal 'id' column so EMPNO/SNAME are first visible columns
+const TABLE_FIELDS = ALL_FIELDS.filter(f => f !== 'id');
 const FORM_FIELDS = ALL_FIELDS;
 
+// Sticky-left columns: always visible when scrolling horizontally
+const STICKY_LEFT = {
+  EMPNO: { left: '0px',    minWidth: '100px' },
+  SNAME: { left: '100px', minWidth: '160px' },
+};
+
+const _initEmp = {
+  employees: [], loading: true, viewTrash: false, searchTerm: '',
+  modalOpen: false, currentEmployee: null,
+  sortConfig: { key: 'id', direction: 'asc' },
+  errorState: null, importData: [], showImportPreview: false, currentPage: 1,
+};
+const _empReducer = (s, { field, value }) => ({ ...s, [field]: value });
+
 export default function Employees() {
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [viewTrash, setViewTrash] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentEmployee, setCurrentEmployee] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
-  const [errorState, setErrorState] = useState(null);
-  const [importData, setImportData] = useState([]);
-  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [empState, dispatch] = useReducer(_empReducer, _initEmp);
+  const { employees, loading, viewTrash, searchTerm, modalOpen, currentEmployee, sortConfig, errorState, importData, showImportPreview, currentPage } = empState;
+  const set = (field, value) => dispatch({ field, value });
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+  const PAGE_SIZE = 100;
 
   const fetchEmployees = async () => {
-    setLoading(true);
-    setErrorState(null);
-    setEmployees([]);
+    set('loading', true);
+    set('errorState', null);
+    set('employees', []);
 
     try {
       const endpoint = viewTrash ? '/employees/trash' : '/employees';
@@ -49,21 +60,22 @@ export default function Employees() {
 
       const data = await response.json();
       if (Array.isArray(data)) {
-        setEmployees(data);
+        set('employees', data);
       } else {
         console.error("Data is not array:", data);
-        setEmployees([]);
+        set('employees', []);
       }
     } catch (error) {
       console.error("Fetch error:", error);
-      setErrorState(error.message);
+      set('errorState', error.message);
     } finally {
-      setLoading(false);
+      set('loading', false);
     }
   };
 
   useEffect(() => {
     fetchEmployees();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewTrash]);
 
   const handleSort = (key) => {
@@ -71,7 +83,8 @@ export default function Employees() {
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
-    setSortConfig({ key, direction });
+    set('sortConfig', { key, direction });
+    set('currentPage', 1); // Reset page when sort changes
   };
 
   const sortedEmployees = [...employees]
@@ -114,6 +127,8 @@ export default function Employees() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
+    // Strip empty strings so the server doesn't insert "" into date/numeric columns
+    Object.keys(data).forEach(k => { if (data[k] === '') delete data[k]; });
 
     try {
       let url = getApiUrl('/employees');
@@ -133,9 +148,12 @@ export default function Employees() {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error("Operation failed");
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error || errBody.message || `Server error ${response.status}`);
+      }
 
-      setModalOpen(false);
+      set('modalOpen', false);
       fetchEmployees();
     } catch (error) {
       console.error(error);
@@ -174,13 +192,24 @@ export default function Employees() {
   };
 
   const openEdit = (emp) => {
-    setCurrentEmployee(emp);
-    setModalOpen(true);
+    set('currentEmployee', emp);
+    set('modalOpen', true);
   };
 
-  const openCreate = () => {
-    setCurrentEmployee({});
-    setModalOpen(true);
+  const openCreate = async () => {
+    // Pre-fill EMPNO with next auto-generated value for this company
+    let nextEmpno = '';
+    try {
+      const res = await fetch(getApiUrl('/employees/next-empno'), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        nextEmpno = data.empno || '';
+      }
+    } catch { /* use blank if request fails */ }
+    set('currentEmployee', { EMPNO: nextEmpno, CheckStatus: 'Active' });
+    set('modalOpen', true);
   };
 
   // Export to Excel
@@ -278,13 +307,13 @@ export default function Employees() {
           return;
         }
 
-        setImportData(validatedData);
-        setShowImportPreview(true);
+        set('importData', validatedData);
+        set('showImportPreview', true);
         toast({
           title: "File Loaded",
           description: `${validatedData.length} records ready for import. Review and confirm.`,
         });
-      } catch (error) {
+      } catch {
         toast({
           title: "Error",
           description: "Failed to read Excel file. Please check the format.",
@@ -318,7 +347,7 @@ export default function Employees() {
           } else {
             errorCount++;
           }
-        } catch (error) {
+        } catch {
           errorCount++;
         }
       }
@@ -328,8 +357,8 @@ export default function Employees() {
         description: `Successfully imported ${successCount} records. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
       });
 
-      setShowImportPreview(false);
-      setImportData([]);
+      set('showImportPreview', false);
+      set('importData', []);
       fetchEmployees();
     } catch (error) {
       toast({
@@ -350,7 +379,7 @@ export default function Employees() {
               {viewTrash ? "Employee Trash" : "Master Employee Roll"}
             </h1>
             <button
-              onClick={() => setViewTrash(!viewTrash)}
+              onClick={() => set('viewTrash', !viewTrash)}
               className={`px-4 py-2 rounded font-bold text-sm flex items-center gap-2 border ${viewTrash ? 'bg-gray-800 text-white' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
             >
               <Trash2 size={16} />
@@ -366,7 +395,7 @@ export default function Employees() {
                 placeholder="Search NAME, EMPNO..."
                 className="pl-9 pr-4 py-2 border border-gray-300 rounded focus:border-blue-500 focus:outline-none w-full md:w-64"
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => { set('searchTerm', e.target.value); set('currentPage', 1); }}
               />
             </div>
             {!viewTrash && (
@@ -427,24 +456,29 @@ export default function Employees() {
         )}
 
         {/* Dense Data Table Container */}
-        <div className="flex-grow overflow-auto border border-gray-300 shadow-sm relative bg-white">
+        <div className="flex flex-col border border-gray-300 shadow-sm bg-white overflow-hidden">
+          <div className="overflow-auto flex-grow">
           <table className="w-full border-collapse text-xs whitespace-nowrap">
             <thead className="bg-gray-100 text-gray-700 sticky top-0 z-20 shadow-sm">
               <tr>
-                {ALL_FIELDS.map(field => (
-                  <th
-                    key={field}
-                    onClick={() => handleSort(field)}
-                    className="p-2 border font-bold text-left cursor-pointer hover:bg-gray-200 select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      {field}
-                      {sortConfig.key === field && (
-                        <ArrowUpDown size={12} className="text-gray-500" />
-                      )}
-                    </div>
-                  </th>
-                ))}
+                {TABLE_FIELDS.map(field => {
+                  const sticky = STICKY_LEFT[field];
+                  return (
+                    <th
+                      key={field}
+                      onClick={() => handleSort(field)}
+                      className={`p-2 border font-bold text-left cursor-pointer hover:bg-gray-200 select-none${sticky ? ' sticky z-30 bg-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.08)]' : ''}`}
+                      style={sticky ? { left: sticky.left, minWidth: sticky.minWidth } : undefined}
+                    >
+                      <div className="flex items-center gap-1">
+                        {field}
+                        {sortConfig.key === field && (
+                          <ArrowUpDown size={12} className="text-gray-500" />
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
                 {/* Actions Column - Sticky Right */}
                 <th className="p-2 border text-center font-bold sticky right-0 bg-gray-100 z-30 min-w-[100px] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.1)]">
                   ACTIONS
@@ -459,13 +493,20 @@ export default function Employees() {
                   {errorState ? "Data unavailable due to error" : "No Records Found"}
                 </td></tr>
               ) : (
-                sortedEmployees.map((emp, idx) => (
+                sortedEmployees.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((emp, idx) => (
                   <tr key={emp.id || idx} className="hover:bg-blue-50 odd:bg-white even:bg-gray-50 transition-colors">
-                    {ALL_FIELDS.map(field => (
-                      <td key={field} className="p-1.5 border align-middle text-gray-700">
-                        {emp[field]}
-                      </td>
-                    ))}
+                    {TABLE_FIELDS.map(field => {
+                      const sticky = STICKY_LEFT[field];
+                      return (
+                        <td
+                          key={field}
+                          className={`p-1.5 border align-middle text-gray-700${sticky ? ' sticky z-10 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)]' : ''}`}
+                          style={sticky ? { left: sticky.left, minWidth: sticky.minWidth } : undefined}
+                        >
+                          {emp[field]}
+                        </td>
+                      );
+                    })}
 
                     {/* Actions Cells - Sticky Right */}
                     <td className="p-1 border text-center sticky right-0 bg-white group-hover:bg-blue-50 z-10 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.1)]">
@@ -503,6 +544,14 @@ export default function Employees() {
               )}
             </tbody>
           </table>
+          </div>
+        <Pagination
+          page={currentPage}
+          totalPages={Math.ceil(sortedEmployees.length / PAGE_SIZE)}
+          total={sortedEmployees.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={(p) => set('currentPage', p)}
+        />
         </div>
       </div>
 
@@ -515,7 +564,7 @@ export default function Employees() {
                 {currentEmployee?.id ? "Edit Employee Record" : "New Employee Entry"}
               </h2>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => set('modalOpen', false)}
                 className="p-1 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
               >
                 <X size={24} />
@@ -524,16 +573,27 @@ export default function Employees() {
 
             <form onSubmit={handleSave} className="flex flex-col flex-grow overflow-hidden">
               <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {FORM_FIELDS.map(field => (
+                {FORM_FIELDS.filter(field => field !== 'id' || currentEmployee?.id).map(field => (
                   <div key={field} className="flex flex-col space-y-1">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{field}</label>
-                    <input
-                      name={field}
-                      defaultValue={currentEmployee?.[field] || ""}
-                      readOnly={field === 'id'}
-                      className={`border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all ${field === 'id' ? 'bg-gray-100' : ''}`}
-                      type={['DOB', 'JDATE', 'RDATE', 'LDATE', 'LopDate'].includes(field) ? "date" : "text"}
-                    />
+                    {field === 'CheckStatus' ? (
+                      <select
+                        name={field}
+                        defaultValue={currentEmployee?.[field] || 'Active'}
+                        className="border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    ) : (
+                      <input
+                        name={field}
+                        defaultValue={currentEmployee?.[field] || ""}
+                        readOnly={field === 'id'}
+                        className={`border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all ${field === 'id' ? 'bg-gray-100' : ''}`}
+                        type={['DOB', 'JDATE', 'RDATE', 'LDATE', 'LopDate'].includes(field) ? "date" : "text"}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -541,7 +601,7 @@ export default function Employees() {
               <div className="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={() => set('modalOpen', false)}
                   className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
                 >
                   Cancel
@@ -568,7 +628,7 @@ export default function Employees() {
                 Import Preview - {importData.length} Records
               </h2>
               <button
-                onClick={() => setShowImportPreview(false)}
+                onClick={() => set('showImportPreview', false)}
                 className="p-1 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
               >
                 <X size={24} />
@@ -591,7 +651,7 @@ export default function Employees() {
                   </thead>
                   <tbody>
                     {importData.slice(0, 100).map((row, index) => (
-                      <tr key={index} className="hover:bg-blue-50">
+                      <tr key={row.EMPNO || index} className="hover:bg-blue-50">
                         <td className="p-2 border">{row.EMPNO}</td>
                         <td className="p-2 border">{row.SNAME}</td>
                         <td className="p-2 border">{row.DESIGNATION}</td>
@@ -613,7 +673,7 @@ export default function Employees() {
 
             <div className="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
               <button
-                onClick={() => setShowImportPreview(false)}
+                onClick={() => set('showImportPreview', false)}
                 className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
               >
                 Cancel

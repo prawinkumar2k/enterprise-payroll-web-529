@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DashboardLayout from "../components/DashboardLayout";
+import Pagination from "../components/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,15 +10,26 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Download } from "lucide-react";
 
 export default function MonthlyAttendance() {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   // Fetch monthly attendance
-  const { data: attendanceResponse, isLoading } = useQuery({
+  const { data: attendanceResponse, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['attendance-monthly', selectedMonth, selectedYear],
-    queryFn: () => fetch(`/api/attendance/monthly?month=${selectedMonth}&year=${selectedYear}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(res => res.json())
+    queryFn: async () => {
+      const res = await fetch(`/api/attendance/monthly?month=${selectedMonth}&year=${selectedYear}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Server error ${res.status}`);
+      }
+      return res.json();
+    },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Fetch settings for working days
@@ -30,6 +42,17 @@ export default function MonthlyAttendance() {
 
   const attendanceData = attendanceResponse?.data || [];
   const workingDays = settings?.working_days_per_month || 30;
+
+  // Reset to page 1 whenever month/year changes
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    setCurrentPage(1);
+  };
+
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    setCurrentPage(1);
+  };
 
   const calculatePayableDays = (present, lop) => {
     return Math.max(0, workingDays - lop);
@@ -79,13 +102,14 @@ export default function MonthlyAttendance() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium">Month</label>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex flex-col gap-1 min-w-[160px]">
+                <label htmlFor="month-select" className="text-sm font-medium">Month</label>
                 <select
+                  id="month-select"
                   className="w-full p-2 border rounded-md"
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  onChange={(e) => handleMonthChange(parseInt(e.target.value))}
                 >
                   {Array.from({ length: 12 }, (_, i) => (
                     <option key={i + 1} value={i + 1}>
@@ -94,19 +118,21 @@ export default function MonthlyAttendance() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="text-sm font-medium">Year</label>
+              <div className="flex flex-col gap-1 min-w-[120px]">
+                <label htmlFor="year-input" className="text-sm font-medium">Year</label>
                 <Input
+                  id="year-input"
                   type="number"
                   value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  onChange={(e) => handleYearChange(parseInt(e.target.value))}
                   min="2020"
                   max="2030"
+                  className="w-full"
                 />
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleExport} variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
+              <div className="ml-auto">
+                <Button onClick={handleExport} variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-1.5" />
                   Export CSV
                 </Button>
               </div>
@@ -156,7 +182,16 @@ export default function MonthlyAttendance() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">Loading attendance data...</div>
+              <div className="text-center py-12 space-y-2">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm text-muted-foreground">Loading attendance data...</p>
+              </div>
+            ) : isError ? (
+              <div className="text-center py-12 space-y-3">
+                <p className="font-semibold text-red-600">Failed to load attendance data</p>
+                <p className="text-sm text-muted-foreground">{error?.message || 'Server not responding'}</p>
+                <button onClick={() => refetch()} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">Retry</button>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -173,7 +208,7 @@ export default function MonthlyAttendance() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {attendanceData.map((employee) => {
+                    {attendanceData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((employee) => {
                       const payableDays = calculatePayableDays(employee.PresentDays || 0, employee.LOPDays || 0);
                       const isComplete = (employee.PresentDays || 0) + (employee.LOPDays || 0) + (employee.LeaveDays || 0) + (employee.WeekOffs || 0) >= workingDays;
 
@@ -208,6 +243,13 @@ export default function MonthlyAttendance() {
                     })}
                   </TableBody>
                 </Table>
+                <Pagination
+                  page={currentPage}
+                  totalPages={Math.ceil(attendanceData.length / PAGE_SIZE)}
+                  total={attendanceData.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </CardContent>

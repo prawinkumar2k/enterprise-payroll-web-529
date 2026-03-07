@@ -169,5 +169,10 @@ export const REPORT_CONFIGS = {
         rowsPerPage: 18,
         orientation: 'landscape',
         title: 'PAY BILL ABSTRACT'
+    },
+    PAY_SLIP: {
+        rowsPerPage: 1,
+        orientation: 'portrait',
+        title: 'PAY SLIP'
     }
 };

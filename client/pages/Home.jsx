@@ -1,19 +1,12 @@
 import { Link } from "react-router-dom";
 import {
-  Users,
-  BarChart3,
   CheckCircle,
-  TrendingUp,
-  FileText,
-  Clock,
   Shield,
   ArrowRight,
   Globe,
   Cpu,
   Layers,
-  HelpCircle,
-  MessageSquare,
-  Briefcase
+  MessageSquare
 } from "lucide-react";
 
 export default function Home() {
@@ -108,8 +101,8 @@ export default function Home() {
               { icon: Cpu, title: "Custom Software", desc: "Engineered-to-order enterprise platforms that solve complex business logic." },
               { icon: Globe, title: "Web Ecosystems", desc: "High-performance web architectures designed for massive scale and security." },
               { icon: Layers, title: "Cloud Infrastructure", desc: "Robust cloud strategy and deployment to ensure 99.99% uptime." }
-            ].map((s, i) => (
-              <div key={i} className="bg-white p-10 rounded-[32px] border border-gray-100 hover:shadow-xl transition-all">
+            ].map((s) => (
+              <div key={s.title} className="bg-white p-10 rounded-[32px] border border-gray-100 hover:shadow-xl transition-all">
                 <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center mb-6">
                   <s.icon className="w-6 h-6 text-primary" />
                 </div>
@@ -135,8 +128,8 @@ export default function Home() {
                 "Agile Development Methodology",
                 "Dedicated Full-Cycle Support",
                 "High-Performance Tech Stacks"
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-4 text-gray-700 font-bold uppercase text-xs tracking-widest">
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-4 text-gray-700 font-bold uppercase text-xs tracking-widest">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
@@ -169,7 +162,7 @@ export default function Home() {
       {/* Call to Action */}
       <section className="bg-gray-900 py-32 overflow-hidden relative">
         <div className="max-w-7xl mx-auto px-4 text-center text-white relative z-10">
-          <h2 className="text-4xl sm:text-7xl font-black mb-12 tracking-tight">Let's Build Something <br /><span className="text-primary italic">Extraordinary</span></h2>
+          <h2 className="text-4xl sm:text-7xl font-black mb-12 tracking-tight">Let&apos;s Build Something <br /><span className="text-primary italic">Extraordinary</span></h2>
           <div className="flex flex-wrap justify-center gap-6">
             <Link to="/contact" className="px-12 py-5 bg-primary text-white rounded-2xl font-black text-xl hover:bg-primary-600 transition-all">Start Your Project</Link>
             <Link to="/careers" className="px-12 py-5 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-2xl font-black text-xl hover:bg-white/20 transition-all">Join Our Team</Link>

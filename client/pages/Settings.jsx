@@ -8,7 +8,6 @@ import {
     ToggleLeft,
     Monitor,
     PenTool,
-    Calculator,
     Loader2
 } from "lucide-react";
 
@@ -19,13 +18,15 @@ export default function Settings() {
     const [activeTab, setActiveTab] = useState('organization');
 
     useEffect(() => {
-        if (settings) setLocalSettings(settings);
+        if (!settings) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing external settings to local edit buffer is intentional
+        setLocalSettings(settings);
     }, [settings]);
 
     const handleSave = async (e) => {
         e.preventDefault();
         setIsSaving(true);
-        const success = await updateGlobalSettings(localSettings);
+        const _success = await updateGlobalSettings(localSettings);
         setIsSaving(false);
     };
 
@@ -82,25 +83,25 @@ export default function Settings() {
                                     <h3 className="text-lg font-bold border-b pb-2">Branding & Identity</h3>
                                     <div className="grid grid-cols-1 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Name</label>
-                                            <input type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_name || ''} onChange={e => setLocalSettings({ ...localSettings, org_name: e.target.value })} />
+                                            <label htmlFor="org-name" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Name</label>
+                                            <input id="org-name" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_name || ''} onChange={e => setLocalSettings({ ...localSettings, org_name: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Full Address</label>
-                                            <textarea className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20 h-20" value={localSettings.org_address || ''} onChange={e => setLocalSettings({ ...localSettings, org_address: e.target.value })} />
+                                            <label htmlFor="org-address" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Full Address</label>
+                                            <textarea id="org-address" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20 h-20" value={localSettings.org_address || ''} onChange={e => setLocalSettings({ ...localSettings, org_address: e.target.value })} />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Phone</label>
-                                                <input type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_phone || ''} onChange={e => setLocalSettings({ ...localSettings, org_phone: e.target.value })} />
+                                                <label htmlFor="org-phone" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Phone</label>
+                                                <input id="org-phone" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_phone || ''} onChange={e => setLocalSettings({ ...localSettings, org_phone: e.target.value })} />
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Email</label>
-                                                <input type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_email || ''} onChange={e => setLocalSettings({ ...localSettings, org_email: e.target.value })} />
+                                                <label htmlFor="org-email" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Email</label>
+                                                <input id="org-email" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_email || ''} onChange={e => setLocalSettings({ ...localSettings, org_email: e.target.value })} />
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Logo</label>
+                                            <p className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Logo</p>
                                             <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-primary/40 transition-colors group">
                                                 {localSettings.org_logo_url ? (
                                                     <div className="relative">
@@ -206,8 +207,8 @@ export default function Settings() {
                                     <h3 className="text-lg font-bold border-b pb-2">Print & Style Defaults</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Main Font Family</label>
-                                            <select className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_family} onChange={e => setLocalSettings({ ...localSettings, print_font_family: e.target.value })}>
+                                            <label htmlFor="print-font-family" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Main Font Family</label>
+                                            <select id="print-font-family" className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_family} onChange={e => setLocalSettings({ ...localSettings, print_font_family: e.target.value })}>
                                                 <option>Times New Roman</option>
                                                 <option>Arial</option>
                                                 <option>Inter</option>
@@ -215,8 +216,8 @@ export default function Settings() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Base Font Size</label>
-                                            <input type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_size} onChange={e => setLocalSettings({ ...localSettings, print_font_size: e.target.value })} />
+                                            <label htmlFor="print-font-size" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Base Font Size</label>
+                                            <input id="print-font-size" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_size} onChange={e => setLocalSettings({ ...localSettings, print_font_size: e.target.value })} />
                                         </div>
                                     </div>
 

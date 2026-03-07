@@ -9,7 +9,8 @@ import {
     getBankStatement,
     getStaffReport,
     getStaffMaster,
-    logPrintAction
+    logPrintAction,
+    getAvailableMonths
 } from '../controllers/report.controller.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
@@ -30,6 +31,7 @@ router.get('/search-employees', searchEmployeesForReports);
 router.get('/staff-report', getStaffReport);
 router.get('/staff-master', getStaffMaster);
 router.get('/bank-statement', getBankStatement);
+router.get('/available-months', getAvailableMonths);
 
 router.post('/log-print', logPrintAction);
 

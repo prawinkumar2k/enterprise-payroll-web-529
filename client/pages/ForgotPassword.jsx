@@ -7,18 +7,18 @@ export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {    e.preventDefault();
     setIsLoading(true);
 
     try {
       // TODO: Implement password reset API
+      // eslint-disable-next-line no-console
       console.log("Reset request for:", email);
       setTimeout(() => {
         setIsLoading(false);
         setSubmitted(true);
       }, 1000);
-    } catch (err) {
+    } catch {
       setIsLoading(false);
     }
   };
@@ -42,17 +42,18 @@ export default function ForgotPassword() {
                 Reset Password
               </h1>
               <p className="text-muted-foreground mb-8">
-                Enter your email address and we'll send you instructions to reset your password.
+                Enter your email address and we&apos;ll send you instructions to reset your password.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
+                  <label htmlFor="forgot-email" className="block text-sm font-semibold text-foreground mb-2">
                     Email Address
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                     <input
+                      id="forgot-email"
                       type="email"
                       placeholder="Enter your email"
                       className="input-field pl-10"
@@ -95,11 +96,11 @@ export default function ForgotPassword() {
                 Check Your Email
               </h2>
               <p className="text-muted-foreground mb-6">
-                We've sent a password reset link to<br />
+                We&apos;ve sent a password reset link to<br />
                 <span className="font-semibold text-foreground">{email}</span>
               </p>
               <p className="text-sm text-muted-foreground mb-8">
-                The link will expire in 24 hours. If you don't see it, check your spam folder.
+                The link will expire in 24 hours. If you don&apos;t see it, check your spam folder.
               </p>
 
               <button

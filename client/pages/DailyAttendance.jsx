@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "../components/DashboardLayout";
+import Pagination from "../components/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,8 @@ export default function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [attendanceData, setAttendanceData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 100;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -26,11 +29,20 @@ export default function DailyAttendance() {
   });
 
   // Fetch daily attendance
-  const { data: attendanceResponse, isLoading } = useQuery({
+  const { data: attendanceResponse, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['attendance-daily', selectedDate, selectedCategory],
-    queryFn: () => fetch(`/api/attendance/daily?date=${selectedDate}&category=${selectedCategory}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(res => res.json())
+    queryFn: async () => {
+      const res = await fetch(`/api/attendance/daily?date=${selectedDate}&category=${selectedCategory}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Server error ${res.status}`);
+      }
+      return res.json();
+    },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Update attendance mutation
@@ -61,7 +73,9 @@ export default function DailyAttendance() {
 
   useEffect(() => {
     if (attendanceResponse?.data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing API response to local state is intentional
       setAttendanceData(attendanceResponse.data);
+      setCurrentPage(1);
     }
   }, [attendanceResponse]);
 
@@ -119,7 +133,7 @@ export default function DailyAttendance() {
           description: "Previous day's attendance copied",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy previous day's attendance",
@@ -158,19 +172,21 @@ export default function DailyAttendance() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium">Date</label>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex flex-col gap-1 min-w-[160px]">
+                <label htmlFor="att-date" className="text-sm font-medium">Date</label>
                 <Input
+                  id="att-date"
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">Category</label>
+              <div className="flex flex-col gap-1 min-w-[180px]">
+                <label htmlFor="att-category" className="text-sm font-medium">Category</label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -180,17 +196,17 @@ export default function DailyAttendance() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end gap-2">
-                <Button onClick={handleMarkAllPresent} variant="outline">
-                  <CheckCircle className="w-4 h-4 mr-2" />
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                <Button onClick={handleMarkAllPresent} variant="outline" size="sm">
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
                   Mark All Present
                 </Button>
-                <Button onClick={handleCopyPreviousDay} variant="outline">
-                  <Copy className="w-4 h-4 mr-2" />
+                <Button onClick={handleCopyPreviousDay} variant="outline" size="sm">
+                  <Copy className="w-4 h-4 mr-1.5" />
                   Copy Previous Day
                 </Button>
-                <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                  <Save className="w-4 h-4 mr-2" />
+                <Button onClick={handleSave} disabled={updateMutation.isPending} size="sm">
+                  <Save className="w-4 h-4 mr-1.5" />
                   {updateMutation.isPending ? 'Saving...' : 'Save Attendance'}
                 </Button>
               </div>
@@ -208,7 +224,24 @@ export default function DailyAttendance() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">Loading attendance data...</div>
+              <div className="text-center py-12 space-y-2">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm text-muted-foreground">Loading attendance data...</p>
+              </div>
+            ) : isError ? (
+              <div className="text-center py-12 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
+                  <span className="text-red-500 text-xl">!</span>
+                </div>
+                <p className="font-semibold text-red-600">Failed to load attendance data</p>
+                <p className="text-sm text-muted-foreground">{error?.message || 'Server not responding'}</p>
+                <button
+                  onClick={() => refetch()}
+                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition"
+                >
+                  Retry
+                </button>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -223,7 +256,7 @@ export default function DailyAttendance() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {attendanceData.map((employee) => (
+                    {attendanceData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((employee) => (
                       <TableRow key={employee.EMPNO}>
                         <TableCell className="font-medium">{employee.EMPNO}</TableCell>
                         <TableCell>{employee.SNAME}</TableCell>
@@ -259,6 +292,13 @@ export default function DailyAttendance() {
                     ))}
                   </TableBody>
                 </Table>
+                <Pagination
+                  page={currentPage}
+                  totalPages={Math.ceil(attendanceData.length / PAGE_SIZE)}
+                  total={attendanceData.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </CardContent>

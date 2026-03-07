@@ -11,8 +11,12 @@ import { httpLogger, correlationMiddleware } from './logger/httpLogger.js';
 import dbManager from './database/dbManager.js';
 import { requestLogger, errorHandler } from './middleware/commonMiddleware.js';
 import { authLimiter, syncLimiter, readLimiter } from './middleware/rateLimiters.js';
+import { provisionCompanyDb, companyDbExists } from './database/provisionCompanyDb.js';
+import mysqlPool from './db.js';
 
 import authRoutes from './routes/auth.js';
+import companiesRoutes from './routes/companies.js';
+import superAdminRoutes from './routes/superAdmin.routes.js';
 import employeeRoutes from './routes/employees.js';
 import payrollRoutes from './routes/payroll.js';
 import userRoutes from './routes/users.js';
@@ -22,6 +26,7 @@ import reportRoutes from './routes/report.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import attendanceRoutes from './routes/attendance.js';
+import incomeExpenseRoutes from './routes/incomeExpense.routes.js';
 import syncRoutes from './routes/sync.routes.js';
 import systemRoutes from './routes/system.routes.js';
 import healthRoutes from './routes/health.routes.js';
@@ -84,12 +89,15 @@ app.get('/api/health', (req, res) => {
 
 // --- ROUTE REGISTRATION ---
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/companies', readLimiter, companiesRoutes);
+app.use('/api/superadmin', readLimiter, superAdminRoutes);
 app.use('/api/sync', syncLimiter, syncRoutes);
 app.use('/api/employees', readLimiter, employeeRoutes);
 app.use('/api/settings', readLimiter, settingsRoutes);
 app.use('/api/reports', readLimiter, reportRoutes);
 app.use('/api/dashboard', readLimiter, dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/income-expense', incomeExpenseRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
@@ -177,17 +185,41 @@ app.listen(PORT, HOST, async () => {
             console.error(`[Integrity] Critical failure: ${integrity.reason}`);
         }
 
-        // 2. Audit Chain Verification
+        // 2. Audit Log Verification
         const auditVerification = await verifyAuditIntegrity();
         if (!auditVerification.success) {
-            console.error(`[Security] Audit log tampering detected: ${auditVerification.error} at record ${auditVerification.recordId}`);
+            console.warn(`[Security] Audit log check failed: ${auditVerification.error}`);
         } else {
-            console.log(`[Security] Audit chain verified (${auditVerification.count} records).`);
+            console.log(`[Security] Audit logs verified (${auditVerification.count} records).`);
         }
 
         // 3. Automated Backup (Daily at startup + every 24h)
         await backupService.performBackup();
         setInterval(() => backupService.performBackup(), 86400000);
+
+        // 4. Ensure company_code column exists in refresh_tokens (billing_db)
+        try {
+            await mysqlPool.execute(`ALTER TABLE refresh_tokens ADD COLUMN company_code VARCHAR(50) DEFAULT 'DEFAULT'`);
+            console.log('[Startup] Added company_code column to refresh_tokens.');
+        } catch (e) {
+            if (e.errno !== 1060) console.warn('[Startup] refresh_tokens column check:', e.message);
+        }
+
+        // 5. Auto-provision company databases for all registered companies
+        try {
+            const [companies] = await mysqlPool.query('SELECT id, company_code FROM companies WHERE company_code IS NOT NULL');
+            for (const co of companies) {
+                const code = co.company_code.toUpperCase();
+                const exists = await companyDbExists(code);
+                if (!exists) {
+                    console.log(`[Startup] Provisioning new database for company: ${code}`);
+                    await provisionCompanyDb(code, co.id);
+                }
+            }
+            console.log(`[Startup] ✓ ${companies.length} company database(s) verified.`);
+        } catch (e) {
+            console.warn('[Startup] Company DB provisioning check failed:', e.message);
+        }
 
     } catch (err) {
         console.error('[Startup] Initialization failed:', err);

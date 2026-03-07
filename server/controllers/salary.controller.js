@@ -70,7 +70,10 @@ export const generateSalary = async (req, res) => {
         }
 
         // 2. Fetch all employees (Lock rows to prevent modification during calculation)
-        const [employees] = await connection.query('SELECT * FROM empdet WHERE CheckStatus IN ("Active", "True") OR CheckStatus IS NULL FOR UPDATE');
+        // Include any employee not explicitly set to Inactive (covers Active, True, NULL, legacy values)
+        const [employees] = await connection.query(
+            'SELECT * FROM empdet WHERE (CheckStatus IS NULL OR LOWER(CheckStatus) != "inactive") AND deleted_at IS NULL FOR UPDATE'
+        );
 
         if (employees.length === 0) {
             await connection.rollback();

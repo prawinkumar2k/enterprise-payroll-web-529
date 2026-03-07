@@ -44,9 +44,9 @@ export const updateSettings = async (req, res) => {
         try {
             for (const key of keys) {
                 const value = String(updates[key]); // Store all as string
-                // Use INSERT OR REPLACE for SQLite compatibility and robustness
+                // Use REPLACE INTO for cross-database compatibility (MySQL + SQLite)
                 await connection.query(
-                    'INSERT OR REPLACE INTO app_settings (setting_key, setting_value) VALUES (?, ?)',
+                    'REPLACE INTO app_settings (setting_key, setting_value) VALUES (?, ?)',
                     [key, value]
                 );
             }

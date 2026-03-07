@@ -1,0 +1,8 @@
+# This directory is mounted into the MySQL Docker container as /docker-entrypoint-initdb.d/
+# Any .sql files placed here will be auto-imported when MySQL starts for the FIRST TIME.
+#
+# On first VPS deploy:
+#   1. Run: powershell -File deploy/vps/export-db.ps1
+#   2. The dump will be saved as: server/database/init/payroll-dump.sql
+#   3. Then run: docker compose up -d
+#   MySQL will auto-import the dump on first start.

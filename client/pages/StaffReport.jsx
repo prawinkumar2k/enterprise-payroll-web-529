@@ -34,7 +34,7 @@ export default function StaffReport() {
             if (data.success) {
                 setStaffData(data.data);
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to fetch staff data");
         } finally {
             setIsLoading(false);
@@ -43,6 +43,7 @@ export default function StaffReport() {
 
     useEffect(() => {
         fetchStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.category, filters.status]);
 
     const handlePrint = () => {
@@ -57,7 +58,7 @@ export default function StaffReport() {
     };
 
     // Manual Pagination Logic
-    const pages = useMemo(() => {
+    const _pages = useMemo(() => {
         return paginateData(staffData, rowsPerPage);
     }, [staffData, rowsPerPage]);
 
@@ -133,7 +134,7 @@ export default function StaffReport() {
                                 </thead>
                                 <tbody className="divide-y">
                                     {staffData.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-gray-50/50">
+                                        <tr key={row.EMPNO || idx} className="hover:bg-gray-50/50">
                                             <td className="px-4 py-3">{idx + 1}</td>
                                             <td className="px-4 py-3 font-mono text-xs">{row.EMPNO}</td>
                                             <td className="px-4 py-3">

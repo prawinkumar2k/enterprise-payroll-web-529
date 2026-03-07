@@ -1,11 +1,14 @@
 import React from "react";
 import SignatureSection from "./SignatureSection";
+import { useSettings } from "../context/SettingsContext";
 
 // Helper parsers
 const p = (val) => parseFloat(val) || 0;
 const fmt = (val) => p(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const PaySlip = ({ data, monthYear, withSignature }) => {
+    const { settings } = useSettings();
+    const orgName = settings?.org_name || "Enterprise Payroll System";
     const earnings = [
         { label: "Basic Pay", value: data.PAY },
         { label: "Grade Pay", value: data.GradePay },
@@ -53,7 +56,7 @@ const PaySlip = ({ data, monthYear, withSignature }) => {
                             <h1 className="text-2xl font-black uppercase tracking-widest m-0 leading-none">Pay Slip</h1>
                             <div className="flex justify-between px-2 mt-2 font-bold text-sm uppercase">
                                 <span>{monthYear}</span>
-                                <span>SearchFirst Payroll System</span>
+                                <span>{orgName}</span>
                             </div>
                         </td>
                     </tr>
@@ -94,8 +97,7 @@ const PaySlip = ({ data, monthYear, withSignature }) => {
                             <table className="w-full">
                                 <tbody>
                                     {rows.map((row, i) => (
-                                        <tr key={i}>
-                                            <td className="p-1 pl-2 text-left align-top">{row.earn.label}</td>
+                                        <tr key={row.earn.label || i}>
                                             <td className="p-1 pr-2 text-right font-mono font-bold align-top min-w-[60px]">{row.earn.value ? fmt(row.earn.value) : ""}</td>
                                         </tr>
                                     ))}
@@ -106,8 +108,7 @@ const PaySlip = ({ data, monthYear, withSignature }) => {
                             <table className="w-full">
                                 <tbody>
                                     {rows.map((row, i) => (
-                                        <tr key={i}>
-                                            <td className="p-1 pl-2 text-left align-top">{row.ded.label}</td>
+                                        <tr key={row.ded.label || i}>
                                             <td className="p-1 pr-2 text-right font-mono font-bold align-top min-w-[60px]">{row.ded.value ? fmt(row.ded.value) : ""}</td>
                                         </tr>
                                     ))}

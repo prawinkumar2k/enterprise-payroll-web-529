@@ -2,6 +2,7 @@
 import mysqlPool from '../db.js';
 import sqliteManager from './sqliteManager.js';
 import modeManager, { MODES } from './modeManager.js';
+import { getTenantPool } from './tenantDbManager.js';
 
 /**
  * DB Manager
@@ -16,12 +17,22 @@ class DBManager {
 
     async init() {
         console.log('[DBManager] Initializing Local Persistence Engine...');
+        // Prefer MySQL when available (web/online deployments). Fall back to SQLite for offline/local desktop.
+        try {
+            // Simple connectivity check
+            await this.mysql.query('SELECT 1');
+            console.log('✓ MySQL reachable — using MySQL as primary persistence.');
+            return;
+        } catch (mysqlErr) {
+            console.warn('[DBManager] MySQL not reachable at startup, falling back to local SQLite. Error:', mysqlErr.message);
+        }
+
         try {
             await this.sqlite.initSchema();
             console.log('✓ Local Persistence Ready.');
         } catch (error) {
             console.error('[DBManager] SQLITE Init Failed:', error.message);
-            // Non-fatal, system will just fail in OFFLINE mode
+            // Non-fatal, system will operate in degraded offline mode
         }
     }
 
@@ -37,10 +48,14 @@ class DBManager {
             return this.sqlite.query(sql, params);
         }
 
+        // Route to company-specific DB if a tenant context is active
+        const tenantPool = getTenantPool();
+        const pool = tenantPool || this.mysql;
+
         try {
-            return await this.mysql.query(sql, params);
+            return await pool.query(sql, params);
         } catch (error) {
-            if (this._isConnectionError(error)) {
+            if (!tenantPool && this._isConnectionError(error)) {
                 console.warn("[DBManager] MySQL unreachable, falling back to local database.");
                 modeManager.isOnline = false;
                 modeManager._updateMode();
@@ -62,11 +77,15 @@ class DBManager {
             return this.sqlite.execute(sql, params);
         }
 
+        // Route to company-specific DB if a tenant context is active
+        const tenantPool = getTenantPool();
+        const pool = tenantPool || this.mysql;
+
         try {
-            const [result] = await this.mysql.execute(sql, params);
+            const [result] = await pool.execute(sql, params);
             return result;
         } catch (error) {
-            if (this._isConnectionError(error)) {
+            if (!tenantPool && this._isConnectionError(error)) {
                 modeManager.isOnline = false;
                 modeManager._updateMode();
                 return this.sqlite.execute(sql, params);
@@ -81,9 +100,10 @@ class DBManager {
             throw new Error("System is currently syncing. Database writes are locked.");
         }
 
+        const tenantPool = getTenantPool();
         const connection = mode === MODES.OFFLINE
             ? await this.sqlite.getConnection()
-            : await this.mysql.getConnection();
+            : await (tenantPool || this.mysql).getConnection();
 
         // Track active transactions to prevent sync collisions
         this.activeTransactions++;

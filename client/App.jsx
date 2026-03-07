@@ -1,47 +1,68 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
-import { SettingsProvider } from "./context/SettingsContext";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { SyncProvider } from "./context/SyncContext";
-import Home from "./pages/Home";
-import About from "./pages/About";
-import Services from "./pages/Services";
-import Portfolio from "./pages/Portfolio";
-import Industries from "./pages/Industries";
-import Blog from "./pages/Blog";
-import Careers from "./pages/Careers";
-import Contact from "./pages/Contact";
-import FAQ from "./pages/FAQ";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/Dashboard";
-import Employees from "./pages/Employees";
-import Salary from "./pages/Salary";
-import PayBillDetail from "./pages/PayBillDetail";
-import PayBillAbstract from "./pages/PayBillAbstract";
-import Abstract1 from "./pages/Abstract1";
-import Abstract2 from "./pages/Abstract2";
-import PayCertificate from "./pages/PayCertificate";
-import StaffReport from "./pages/StaffReport";
-import BankStatement from "./pages/BankStatement";
-import Settings from "./pages/Settings";
-import Users from "./pages/Users";
-import AuditLogs from "./pages/AuditLogs";
-import DailyAttendance from "./pages/DailyAttendance";
-import MonthlyAttendance from "./pages/MonthlyAttendance";
-import AttendanceReports from "./pages/AttendanceReports";
-import SyncDashboard from "./pages/SyncDashboard";
-import LicenseManagement from "./pages/LicenseManagement";
-import Placeholder from "./pages/Placeholder";
-import PrintReportView from "./pages/PrintReportView";
-import NotFound from "./pages/NotFound";
 
-import { useNavigate, Navigate } from "react-router-dom";
-import { useSettings } from "./context/SettingsContext";
+// Lazy-load all pages — each becomes its own JS chunk loaded on demand
+const Home              = lazy(() => import("./pages/Home"));
+const About             = lazy(() => import("./pages/About"));
+const Services          = lazy(() => import("./pages/Services"));
+const Portfolio         = lazy(() => import("./pages/Portfolio"));
+const Industries        = lazy(() => import("./pages/Industries"));
+const Blog              = lazy(() => import("./pages/Blog"));
+const Careers           = lazy(() => import("./pages/Careers"));
+const Contact           = lazy(() => import("./pages/Contact"));
+const FAQ               = lazy(() => import("./pages/FAQ"));
+const Login             = lazy(() => import("./pages/Login"));
+const ForgotPassword    = lazy(() => import("./pages/ForgotPassword"));
+const Dashboard         = lazy(() => import("./pages/Dashboard"));
+const Employees         = lazy(() => import("./pages/Employees"));
+const Salary            = lazy(() => import("./pages/Salary"));
+const PayBillDetail     = lazy(() => import("./pages/PayBillDetail"));
+const PayBillAbstract   = lazy(() => import("./pages/PayBillAbstract"));
+const Abstract1         = lazy(() => import("./pages/Abstract1"));
+const Abstract2         = lazy(() => import("./pages/Abstract2"));
+const PayCertificate    = lazy(() => import("./pages/PayCertificate"));
+const StaffReport       = lazy(() => import("./pages/StaffReport"));
+const BankStatement     = lazy(() => import("./pages/BankStatement"));
+const Settings          = lazy(() => import("./pages/Settings"));
+const Users             = lazy(() => import("./pages/Users"));
+const AuditLogs         = lazy(() => import("./pages/AuditLogs"));
+const DailyAttendance   = lazy(() => import("./pages/DailyAttendance"));
+const MonthlyAttendance = lazy(() => import("./pages/MonthlyAttendance"));
+const AttendanceReports = lazy(() => import("./pages/AttendanceReports"));
+const SyncDashboard     = lazy(() => import("./pages/SyncDashboard"));
+const LicenseManagement = lazy(() => import("./pages/LicenseManagement"));
+const Placeholder       = lazy(() => import("./pages/Placeholder"));
+const PrintReportView   = lazy(() => import("./pages/PrintReportView"));
+const Income            = lazy(() => import("./pages/Income"));
+const Expense           = lazy(() => import("./pages/Expense"));
+const NotFound          = lazy(() => import("./pages/NotFound"));
+// Super Admin Panel
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+const SuperAdminCompanies = lazy(() => import('./pages/superadmin/SuperAdminCompanies'));
+const SuperAdminPlans     = lazy(() => import('./pages/superadmin/SuperAdminPlans'));
+/**
+ * Guard for Super Admin routes — redirects to /login if no sa_token
+ */
+const SAGuard = ({ children }) => {
+  const token = localStorage.getItem('sa_token');
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+};
 
 const queryClient = new QueryClient();
+
+/** Simple full-screen spinner shown while a lazy page chunk loads */
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
 
 /**
  * FeatureRoute - Higher-Order Component for Settings-Driven access
@@ -62,6 +83,7 @@ const App = () =>
           <Toaster />
           <Sonner />
           <Router>
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -91,6 +113,10 @@ const App = () =>
               {/* Print Engine Dedicated Route */}
               <Route path="/print-report" element={<PrintReportView />} />
 
+              {/* Finance Module */}
+              <Route path="/income"  element={<FeatureRoute feature="enable_income"><Income /></FeatureRoute>} />
+              <Route path="/expense" element={<FeatureRoute feature="enable_expense"><Expense /></FeatureRoute>} />
+
               <Route path="/settings" element={<Settings />} />
               <Route path="/license" element={<LicenseManagement />} />
               <Route path="/sync" element={<SyncDashboard />} />
@@ -100,10 +126,24 @@ const App = () =>
               <Route path="/about" element={<About />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/industries" element={<Industries />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/placeholder" element={<Placeholder />} />
 
               {/* Catch-all Route */}
               <Route path="*" element={<NotFound />} />
+
+              {/* ── Super Admin Panel ─────────────────────────────── */}
+              <Route path="/superadmin/login" element={<Navigate to="/login" replace />} />
+              <Route path="/superadmin/dashboard" element={<SAGuard><SuperAdminDashboard /></SAGuard>} />
+              <Route path="/superadmin/companies" element={<SAGuard><SuperAdminCompanies /></SAGuard>} />
+              <Route path="/superadmin/plans" element={<SAGuard><SuperAdminPlans /></SAGuard>} />
+              <Route path="/superadmin" element={<Navigate to="/login" replace />} />
             </Routes>
+            </Suspense>
           </Router>
         </TooltipProvider>
       </SyncProvider>

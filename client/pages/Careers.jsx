@@ -1,5 +1,5 @@
 import PublicLayout from "../components/PublicLayout";
-import { Briefcase, MapPin, Clock } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 
 const JOBS = [
     { title: "Senior Systems Architect", type: "Full-Time", location: "Global / Remote", dept: "Engineering" },
@@ -21,8 +21,8 @@ export default function Careers() {
                     <div className="bg-white rounded-[60px] p-12 sm:p-20 border border-gray-100 shadow-sm mb-20">
                         <h2 className="text-3xl font-black text-gray-900 mb-12 uppercase tracking-tight">Open Positions</h2>
                         <div className="divide-y divide-gray-100">
-                            {JOBS.map((job, i) => (
-                                <div key={i} className="py-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:px-6 transition-all">
+                            {JOBS.map((job) => (
+                                <div key={job.title} className="py-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:px-6 transition-all">
                                     <div>
                                         <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-primary transition-colors cursor-pointer">{job.title}</h3>
                                         <div className="flex gap-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -38,7 +38,7 @@ export default function Careers() {
                     </div>
 
                     <div className="text-center">
-                        <p className="text-gray-400 italic">"We are always looking for visionary engineers. If you don't see a fit but believe in our mission, email us at careers@searchfirst.tech"</p>
+                        <p className="text-gray-400 italic">&ldquo;We are always looking for visionary engineers. If you don&apos;t see a fit but believe in our mission, email us at careers@searchfirst.tech&rdquo;</p>
                     </div>
                 </div>
             </div>

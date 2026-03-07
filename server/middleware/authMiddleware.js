@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { runWithTenant } from '../database/tenantDbManager.js';
 const JWT_SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
 
 export const authenticate = async (req, res, next) => {
@@ -22,10 +23,17 @@ export const authenticate = async (req, res, next) => {
         req.user = {
             id: decoded.id,
             username: decoded.username,
-            role: decoded.role
+            role: decoded.role,
+            company_id: decoded.company_id || 1,
+            company_code: decoded.company_code || 'DEFAULT'
         };
 
-        next();
+        // Route ALL subsequent DB calls for this request to the company's own database
+        if (req.user.company_code) {
+            runWithTenant(req.user.company_code, () => next());
+        } else {
+            next();
+        }
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({
@@ -91,8 +99,15 @@ export const optionalAuth = async (req, res, next) => {
             req.user = {
                 id: decoded.id,
                 username: decoded.username,
-                role: decoded.role
+                role: decoded.role,
+                company_id: decoded.company_id || 1,
+                company_code: decoded.company_code || 'DEFAULT'
             };
+
+            if (req.user.company_code) {
+                runWithTenant(req.user.company_code, () => next());
+                return;
+            }
         }
 
         next();

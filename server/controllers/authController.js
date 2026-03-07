@@ -1,4 +1,6 @@
 import dbManager from '../database/dbManager.js';
+import mysqlPool from '../db.js';
+import { getTenantPool } from '../database/tenantDbManager.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logAction } from '../middleware/log.middleware.js';
@@ -8,25 +10,31 @@ const JWT_SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
-const generateAccessToken = (user) => {
+const generateAccessToken = (user, companyCode) => {
     return jwt.sign(
-        { id: user.id || user.ID, username: user.UserID, role: user.Role || 'employee' },
+        {
+            id: user.id || user.ID,
+            username: user.UserID,
+            role: user.Role || 'employee',
+            company_id: user.company_id || 1,
+            company_code: companyCode || 'DEFAULT'
+        },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 };
 
 /**
- * Helper to generate and store refresh token
+ * Store refresh token in billing_db (with company_code so refresh can re-establish tenant context)
  */
-const generateRefreshToken = async (userId, deviceId = null) => {
+const generateRefreshToken = async (userId, deviceId, companyCode) => {
     const token = randomBytes(40).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
 
-    await dbManager.execute(
-        'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at) VALUES (?, ?, ?, ?)',
-        [token, userId, deviceId, expiresAt]
+    await mysqlPool.execute(
+        'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at, company_code) VALUES (?, ?, ?, ?, ?)',
+        [token, userId, deviceId || null, expiresAt, companyCode]
     );
 
     return token;
@@ -36,25 +44,41 @@ const generateRefreshToken = async (userId, deviceId = null) => {
  * Login Controller
  */
 export const login = async (req, res) => {
-    const { userId, password, device_id } = req.body;
+    const { userId, password, company_id, device_id } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '0.0.0.0';
 
     if (!userId || !password) {
         return res.status(400).json({ success: false, message: 'User ID and password are required', code: 'AUTH_MISSING_CREDENTIALS' });
     }
+    if (!company_id) {
+        return res.status(400).json({ success: false, message: 'Company is required', code: 'AUTH_MISSING_COMPANY' });
+    }
 
     try {
-        console.log(`[Auth] Attempting login for user: ${userId}`);
-        const [rows] = await dbManager.query(
+        // 1. Validate company in billing_db and get its code
+        const [companyRows] = await mysqlPool.query(
+            'SELECT id, company_code, company_name FROM companies WHERE id = ? AND (is_active = 1 OR status = "active")',
+            [company_id]
+        );
+        if (!companyRows || companyRows.length === 0) {
+            return res.status(401).json({ success: false, message: 'Invalid company or company is inactive', code: 'AUTH_INVALID_COMPANY' });
+        }
+        const company_code = companyRows[0].company_code;
+        const company_name = companyRows[0].company_name;
+
+        // 2. Look up user in company's own database
+        const tenantPool = getTenantPool(company_code);
+        console.log(`[Auth] Attempting login for user: ${userId} in company: ${company_code}`);
+
+        const [rows] = await tenantPool.query(
             'SELECT * FROM userdetails WHERE UserID = ?',
             [userId]
         );
-
         const user = rows ? rows[0] : null;
 
         if (!user) {
             console.warn(`[Auth] User not found: ${userId}`);
-            await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']);
+            await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']);
             return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
         }
 
@@ -69,27 +93,26 @@ export const login = async (req, res) => {
             isMatch = (password === user.Password);
             if (isMatch) {
                 console.log('[Auth] Plaintext match! Migrating to Bcrypt...');
-                // Auto-migrate to bcrypt
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(password, salt);
-                await dbManager.query('UPDATE userdetails SET Password = ? WHERE UserID = ?', [hashedPassword, userId]);
+                await tenantPool.execute('UPDATE userdetails SET Password = ? WHERE UserID = ?', [hashedPassword, userId]);
             }
         }
 
         console.log(`[Auth] Password match: ${isMatch}`);
 
         if (!isMatch) {
-            await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']);
+            await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']);
             return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
         }
 
         // Generate Tokens
         console.log('[Auth] Generating tokens...');
-        const accessToken = generateAccessToken(user);
-        const refreshToken = await generateRefreshToken(user.id, device_id);
+        const accessToken = generateAccessToken(user, company_code);
+        const refreshToken = await generateRefreshToken(user.id, device_id, company_code);
 
         // Success Log
-        await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'SUCCESS']);
+        await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'SUCCESS']);
         await logAction({
             userId: user.UserID,
             module: 'AUTH',
@@ -115,7 +138,10 @@ export const login = async (req, res) => {
                 id: user.id || user.ID,
                 username: user.UserID,
                 name: user.UserName,
-                role: user.Role
+                role: user.Role,
+                company_id: user.company_id,
+                company_code,
+                company_name
             }
         });
 
@@ -137,42 +163,44 @@ export const refreshToken = async (req, res) => {
     }
 
     try {
-        const rows = await dbManager.query(
+        // refresh_tokens live in billing_db
+        const [rows] = await mysqlPool.query(
             'SELECT * FROM refresh_tokens WHERE token = ? AND revoked_at IS NULL',
             [token]
         );
 
         const existingToken = rows[0];
 
-        // Token Replay/Abuse detection
         if (!existingToken || new Date() > new Date(existingToken.expires_at)) {
-            // If token in cookie is revoked or expired but somehow still present
             return res.status(401).json({ success: false, message: 'Invalid or expired refresh token', code: 'AUTH_INVALID_REFRESH_TOKEN' });
         }
 
-        const [userRows] = await dbManager.query('SELECT * FROM userdetails WHERE id = ?', [existingToken.user_id]);
+        // Get user from company's own database using company_code stored in the token
+        const company_code = existingToken.company_code || 'DEFAULT';
+        const tenantPool = getTenantPool(company_code);
+        const [userRows] = await tenantPool.query('SELECT * FROM userdetails WHERE id = ?', [existingToken.user_id]);
         const user = userRows[0];
 
         if (!user) {
             return res.status(401).json({ success: false, message: 'User no longer exists', code: 'AUTH_USER_NOT_FOUND' });
         }
 
-        // Rotate Token
+        // Rotate Token in billing_db
         const newRefreshToken = randomBytes(40).toString('hex');
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
 
-        await dbManager.execute(
+        await mysqlPool.execute(
             'UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP, replaced_by_token = ? WHERE id = ?',
             [newRefreshToken, existingToken.id]
         );
 
-        await dbManager.execute(
-            'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at) VALUES (?, ?, ?, ?)',
-            [newRefreshToken, user.id, existingToken.device_id, expiresAt]
+        await mysqlPool.execute(
+            'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at, company_code) VALUES (?, ?, ?, ?, ?)',
+            [newRefreshToken, user.id, existingToken.device_id, expiresAt, company_code]
         );
 
-        const newAccessToken = generateAccessToken(user);
+        const newAccessToken = generateAccessToken(user, company_code);
 
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,

@@ -181,6 +181,18 @@ async function initDB() {
                 category VARCHAR(50),
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
+
+            INSERT IGNORE INTO app_settings (setting_key, setting_value, category) VALUES 
+                ('enable_attendance', 'true', 'FEATURE'),
+                ('enable_pay_bill', 'true', 'FEATURE'),
+                ('enable_bank_statement', 'true', 'FEATURE'),
+                ('enable_abstract_1', 'true', 'FEATURE'),
+                ('enable_abstract_2', 'true', 'FEATURE'),
+                ('enable_pay_certificate', 'true', 'FEATURE'),
+                ('enable_staff_report', 'true', 'FEATURE'),
+                ('org_name', 'Enterprise Payroll', 'GENERAL'),
+                ('print_font_family', 'Times New Roman', 'STYLE'),
+                ('print_font_size', '10pt', 'STYLE');
         `;
 
         await connection.query(schema);

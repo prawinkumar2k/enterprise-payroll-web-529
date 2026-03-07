@@ -260,8 +260,8 @@ export const getAbstract1 = async (req, res) => {
 };
 
 export const getBankStatement = async (req, res) => {
-    const { monthYear: rawMonthYear, category, bonusMode } = req.query;
-    const isBonus = bonusMode === 'true';
+    const { monthYear: rawMonthYear, category, bonus, bonusMode } = req.query;
+    const isBonus = bonus === 'true' || bonusMode === 'true';
 
     if (!rawMonthYear) {
         return res.status(400).json({ success: false, message: 'Month and Year required' });
@@ -523,5 +523,42 @@ export const getStaffMaster = async (req, res) => {
     } catch (error) {
         console.error('Staff Master Fetch Error:', error);
         res.status(500).json({ success: false, message: 'Server Error fetching Staff Master' });
+    }
+};
+
+/**
+ * GET /api/reports/available-months
+ * Returns all distinct MONTHYEAR values from emppay, sorted newest-first,
+ * plus the latest month/year in MM/YYYY form for the default picker value.
+ */
+export const getAvailableMonths = async (req, res) => {
+    try {
+        const MONTH_NUM = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+
+        // Only fetch well-formed "MMM YYYY" entries
+        const [rows] = await dbManager.query(
+            "SELECT DISTINCT MONTHYEAR FROM emppay WHERE MONTHYEAR REGEXP '^[A-Z]{3} [0-9]{4}$'"
+        );
+
+        const parsed = rows
+            .map(r => {
+                const [mon, yr] = r.MONTHYEAR.split(' ');
+                const num = MONTH_NUM[mon];
+                if (!num || !yr) return null;
+                return { raw: r.MONTHYEAR, month: String(num).padStart(2, '0'), year: yr };
+            })
+            .filter(Boolean)
+            .sort((a, b) => {
+                const diff = parseInt(b.year) - parseInt(a.year);
+                return diff !== 0 ? diff : parseInt(b.month) - parseInt(a.month);
+            });
+
+        const years = [...new Set(parsed.map(x => x.year))];
+        const latest = parsed[0] || null;
+
+        res.json({ success: true, months: parsed, years, latest });
+    } catch (error) {
+        console.error('Available Months Fetch Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to load available months' });
     }
 };

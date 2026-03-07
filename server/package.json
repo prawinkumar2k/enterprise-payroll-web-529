@@ -6,7 +6,9 @@
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
-        "dev": "nodemon index.js"
+        "dev": "nodemon index.js",
+        "migrate:mysql": "node scripts/mysql-migrate.js",
+        "fix:mysql": "node scripts/mysql-fix-schema.js"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",

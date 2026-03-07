@@ -34,29 +34,36 @@ export const createEmployee = async (req, res) => {
     const data = req.body;
     const user = req.user || { username: 'SYSTEM' };
 
-    // --- COMMERCIAL LIMIT CHECK ---
-    const limits = await licenseService.getProductLimits();
-    const [countRow] = await dbManager.query('SELECT COUNT(*) as count FROM empdet WHERE deleted_at IS NULL');
-    const currentCount = countRow[0].count;
+    try {
+        // --- COMMERCIAL LIMIT CHECK ---
+        const limits = await licenseService.getProductLimits();
+        const [countRow] = await dbManager.query('SELECT COUNT(*) as count FROM empdet WHERE deleted_at IS NULL');
+        const currentCount = countRow[0].count;
 
-    if (currentCount >= limits.maxEmployees) {
-        return res.status(403).json({
-            success: false,
-            message: `Employee limit reached (${limits.maxEmployees}). Please upgrade your license to add more employees.`,
-            isTrial: !limits.isLicensed
-        });
+        if (currentCount >= limits.maxEmployees) {
+            return res.status(403).json({
+                success: false,
+                message: `Employee limit reached (${limits.maxEmployees}). Please upgrade your license to add more employees.`,
+                isTrial: !limits.isLicensed
+            });
+        }
+    } catch (limitErr) {
+        console.warn('[createEmployee] License check failed, allowing create:', limitErr.message);
     }
 
+    // Filter: skip undefined AND empty string values so date/numeric columns stay NULL
+    const hasValue = (f) => data[f] !== undefined && data[f] !== '';
+
     const uuid = randomUUID();
-    const keys = [...EMP_FIELDS.filter(f => data[f] !== undefined), 'uuid', 'is_synced', 'device_id'];
-    const values = [...EMP_FIELDS.filter(f => data[f] !== undefined).map(k => data[k]), uuid, 0, 'SERVER_01'];
+    const keys = [...EMP_FIELDS.filter(hasValue), 'uuid', 'is_synced', 'device_id'];
+    const values = [...EMP_FIELDS.filter(hasValue).map(k => data[k]), uuid, 0, 'SERVER_01'];
     const placeholders = keys.map(() => '?').join(', ');
 
     if (keys.length <= 3) {
         return res.status(400).json({ error: "No valid fields provided" });
     }
 
-    const query = `INSERT INTO empdet (${keys.map(k => `\`${k}\``).join(', ')}) VALUES (${placeholders})`;
+    const query = `INSERT INTO empdet (${keys.map(k => '\`'+k+'\`').join(', ')}) VALUES (${placeholders})`;
 
     try {
         const result = await dbManager.execute(query, values);
@@ -93,7 +100,7 @@ export const updateEmployee = async (req, res) => {
             return res.status(404).json({ error: "Employee not found" });
         }
 
-        const keys = EMP_FIELDS.filter(f => data[f] !== undefined);
+        const keys = EMP_FIELDS.filter(f => data[f] !== undefined && data[f] !== '');
         const values = keys.map(k => data[k]);
 
         if (keys.length === 0) {
@@ -176,6 +183,32 @@ export const restoreEmployee = async (req, res) => {
         res.json({ message: "Employee restored" });
     } catch (error) {
         console.error('Error restoring employee:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getNextEmpno = async (req, res) => {
+    try {
+        const companyCode = (req.user?.company_code || 'DEFAULT').toUpperCase();
+        // Build prefix: if code is longer than 5 chars use first 3, else use full code
+        const prefix = companyCode.length > 5 ? companyCode.slice(0, 3) : companyCode;
+
+        // Find all EMPNOs that start with this prefix
+        const [rows] = await dbManager.query(
+            'SELECT EMPNO FROM empdet WHERE EMPNO LIKE ? ORDER BY id DESC',
+            [`${prefix}%`]
+        );
+
+        // Parse the numeric suffix, find the max
+        const nums = rows
+            .map(r => parseInt(String(r.EMPNO).replace(prefix, ''), 10))
+            .filter(n => Number.isFinite(n) && n > 0);
+        const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+        const empno = prefix + String(next).padStart(3, '0');
+
+        res.json({ empno, prefix, next });
+    } catch (error) {
+        console.error('Error generating next EMPNO:', error);
         res.status(500).json({ error: error.message });
     }
 };

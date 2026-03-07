@@ -1,28 +1,24 @@
-import { useState, useEffect } from "react";
-import { Search, Filter, RotateCcw, Download } from "lucide-react";
+import { useReducer, useEffect, useState } from "react";
+import { Search, Filter, RotateCcw } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
+import Pagination from "../components/Pagination";
+import { auditLogsReducer, initialAuditState } from "@/src/reducers/auditLogsReducer";
 
 export default function AuditLogs() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [expandedLog, setExpandedLog] = useState(null); // For mobile detail view
-
-  // Filters
-  const [userNameFilter, setUserNameFilter] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [state, dispatch] = useReducer(auditLogsReducer, initialAuditState);
+  const { logs, loading, expandedLog, userNameFilter, roleFilter, actionFilter, startDate, endDate, filtersOpen } = state;
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 100;
+  const pagedLogs = logs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   useEffect(() => {
     fetchLogs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchLogs = async () => {
     try {
-      setLoading(true);
+      dispatch({ type: 'SET_LOADING', value: true });
       const token = localStorage.getItem("token");
 
       const params = new URLSearchParams();
@@ -38,28 +34,25 @@ export default function AuditLogs() {
       const data = await res.json();
 
       if (data.success) {
-        setLogs(data.data);
+        dispatch({ type: 'SET_LOGS', logs: data.data });
+        setCurrentPage(1);
       } else {
-        setError(data.message);
+        dispatch({ type: 'SET_ERROR', error: data.message });
       }
-    } catch (err) {
-      setError("Failed to fetch logs");
+    } catch {
+      dispatch({ type: 'SET_ERROR', error: "Failed to fetch logs" });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', value: false });
     }
   };
 
   const handleClearFilters = () => {
-    setUserNameFilter("");
-    setRoleFilter("");
-    setActionFilter("");
-    setStartDate("");
-    setEndDate("");
+    dispatch({ type: 'CLEAR_FILTERS' });
     fetchLogsWithParams("", "", "", "", "");
   };
 
   const fetchLogsWithParams = async (u, r, a, s, e) => {
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', value: true });
     const token = localStorage.getItem("token");
     const params = new URLSearchParams();
     if (u) params.append("user", u);
@@ -72,9 +65,9 @@ export default function AuditLogs() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.success) setLogs(data.data);
-    } catch (err) { console.error(err); }
-    setLoading(false);
+      if (data.success) { dispatch({ type: 'SET_LOGS', logs: data.data }); setCurrentPage(1); }
+    } catch (e) { console.error(e); }
+    dispatch({ type: 'SET_LOADING', value: false });
   }
 
   return (
@@ -87,7 +80,7 @@ export default function AuditLogs() {
             <p className="text-xs sm:text-sm text-gray-500">Immutable enterprise audit trail</p>
           </div>
           <button
-            onClick={() => setFiltersOpen(!filtersOpen)}
+            onClick={() => dispatch({ type: 'SET_FIELD', field: 'filtersOpen', value: !filtersOpen })}
             className="lg:hidden w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 active:bg-gray-50 transition-colors shadow-sm"
           >
             <Filter className="w-4 h-4" />
@@ -98,22 +91,24 @@ export default function AuditLogs() {
         {/* Adaptive Filter Bar */}
         <div className={`${filtersOpen ? 'flex' : 'hidden'} lg:flex bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-col lg:flex-row flex-wrap gap-4 items-stretch lg:items-end transition-all duration-300`}>
           <div className="space-y-1.5 flex-1 min-w-[200px]">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">User Name</label>
+            <label htmlFor="audit-username" className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">User Name</label>
             <input
+              id="audit-username"
               type="text"
               placeholder="Search user..."
               className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
               value={userNameFilter}
-              onChange={e => setUserNameFilter(e.target.value)}
+              onChange={e => dispatch({ type: 'SET_FIELD', field: 'userNameFilter', value: e.target.value })}
             />
           </div>
 
           <div className="space-y-1.5 lg:w-40">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Role</label>
+            <label htmlFor="audit-role" className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Role</label>
             <select
+              id="audit-role"
               className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm bg-white outline-none focus:border-primary cursor-pointer"
               value={roleFilter}
-              onChange={e => setRoleFilter(e.target.value)}
+              onChange={e => dispatch({ type: 'SET_FIELD', field: 'roleFilter', value: e.target.value })}
             >
               <option value="">All Roles</option>
               <option value="admin">Admin</option>
@@ -124,30 +119,32 @@ export default function AuditLogs() {
           </div>
 
           <div className="space-y-1.5 flex-1 min-w-[200px]">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Action Type</label>
+            <label htmlFor="audit-action" className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Action Type</label>
             <input
+              id="audit-action"
               type="text"
               placeholder="e.g. LOGIN"
               className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary"
               value={actionFilter}
-              onChange={e => setActionFilter(e.target.value)}
+              onChange={e => dispatch({ type: 'SET_FIELD', field: 'actionFilter', value: e.target.value })}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Date Range</label>
+            <label htmlFor="audit-date-start" className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Date Range</label>
             <div className="flex gap-2">
               <input
+                id="audit-date-start"
                 type="date"
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none bg-gray-50 focus:bg-white"
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                onChange={e => dispatch({ type: 'SET_FIELD', field: 'startDate', value: e.target.value })}
               />
               <input
                 type="date"
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none bg-gray-50 focus:bg-white"
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                onChange={e => dispatch({ type: 'SET_FIELD', field: 'endDate', value: e.target.value })}
               />
             </div>
           </div>
@@ -191,7 +188,7 @@ export default function AuditLogs() {
                 ) : logs.length === 0 ? (
                   <tr><td colSpan="6" className="p-12 text-center text-gray-400 font-medium">No logs recorded for this period.</td></tr>
                 ) : (
-                  logs.map(log => (
+                  pagedLogs.map(log => (
                     <tr key={log.LogID || log.id} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap group">
                       <td className="px-6 py-4">
                         <div className="font-semibold text-gray-900">{log.UserName}</div>
@@ -236,11 +233,14 @@ export default function AuditLogs() {
             ) : logs.length === 0 ? (
               <div className="p-12 text-center text-gray-400 font-medium whitespace-normal">No logs recorded.</div>
             ) : (
-              logs.map(log => (
+              pagedLogs.map(log => (
                 <div
                   key={log.LogID || log.id}
+                  role="button"
+                  tabIndex={0}
                   className="p-4 bg-white active:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedLog(expandedLog === (log.LogID || log.id) ? null : (log.LogID || log.id))}
+                  onClick={() => dispatch({ type: 'SET_FIELD', field: 'expandedLog', value: expandedLog === (log.LogID || log.id) ? null : (log.LogID || log.id) })}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dispatch({ type: 'SET_FIELD', field: 'expandedLog', value: expandedLog === (log.LogID || log.id) ? null : (log.LogID || log.id) }); }}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
@@ -282,6 +282,13 @@ export default function AuditLogs() {
             )}
           </div>
         </div>
+        <Pagination
+          page={currentPage}
+          totalPages={Math.ceil(logs.length / PAGE_SIZE)}
+          total={logs.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </DashboardLayout>
   );

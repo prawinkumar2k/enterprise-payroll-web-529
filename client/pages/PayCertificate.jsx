@@ -1,19 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useReducer, useEffect, useCallback } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import { useSettings } from "../context/SettingsContext";
 import {
-    Printer,
     Home,
     Loader2,
     AlertCircle,
     Search,
-    User
+    User,
+    Printer
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getMonthName } from "../utils/printEngine";
 import PrintPage from "../components/print/PrintPage";
 import ReportHeader from "../components/print/ReportHeader";
-import ReportFooter from "../components/print/ReportFooter";
+
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const initialCertState = {
+    filters: { empNo: "", month: "", year: "" },
+    employees: [],
+    searchTerm: "",
+    certificateData: null,
+    isLoading: false,
+    isSearching: false,
+};
+
+function certReducer(state, action) {
+    switch (action.type) {
+        case 'SET_FIELD': return { ...state, [action.field]: action.value };
+        case 'SET_FILTER': return { ...state, filters: { ...state.filters, [action.field]: action.value } };
+        case 'FETCH_CERT_START': return { ...state, isLoading: true, certificateData: null };
+        case 'FETCH_CERT_DONE': return { ...state, isLoading: false, certificateData: action.data };
+        default: return state;
+    }
+}
 
 export default function PayCertificate() {
     const navigate = useNavigate();
@@ -21,79 +42,50 @@ export default function PayCertificate() {
     const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
     const currentYear = String(now.getFullYear());
 
-    const [filters, setFilters] = useState({
-        empNo: "",
-        month: currentMonth,
-        year: currentYear
+    const [state, dispatch] = useReducer(certReducer, {
+        ...initialCertState,
+        filters: { empNo: "", month: currentMonth, year: currentYear }
     });
+    const { filters, employees, searchTerm, certificateData, isLoading } = state;
 
-    const [employees, setEmployees] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [certificateData, setCertificateData] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isSearching, setIsSearching] = useState(false);
-
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    useEffect(() => {
-        const fetchEmployees = async () => {
-            setIsSearching(true);
-            try {
-                const response = await fetch(`/api/reports/search-employees`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
-                const data = await response.json();
-                if (data.success) setEmployees(data.data);
-            } catch (error) {
-                console.error("Failed to fetch employees");
-            } finally {
-                setIsSearching(false);
-            }
-        };
-        fetchEmployees();
-    }, []);
-
-    const handleSearch = async (val) => {
-        setSearchTerm(val);
-        if (val.length < 2 && val !== "") return;
-        setIsSearching(true);
+    const handleSearch = useCallback(async (term) => {
+        dispatch({ type: 'SET_FIELD', field: 'searchTerm', value: term });
+        if (!term || term.length < 2) {
+            dispatch({ type: 'SET_FIELD', field: 'employees', value: [] });
+            return;
+        }
         try {
-            const response = await fetch(`/api/reports/search-employees?query=${val}`, {
+            const response = await fetch(`/api/employees?search=${encodeURIComponent(term)}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
-            if (data.success) setEmployees(data.data);
-        } catch (error) {
-            console.error("Search failed");
-        } finally {
-            setIsSearching(false);
+            if (data.success) dispatch({ type: 'SET_FIELD', field: 'employees', value: data.data || [] });
+        } catch {
+            dispatch({ type: 'SET_FIELD', field: 'employees', value: [] });
         }
-    };
+    }, []);
 
     const fetchCertificate = async () => {
         if (!filters.empNo) return;
-        setIsLoading(true);
-        setCertificateData(null);
+        dispatch({ type: 'FETCH_CERT_START' });
         const monthYear = `${filters.month}-${filters.year}`;
         try {
             const response = await fetch(`/api/reports/pay-certificate?monthYear=${monthYear}&empNo=${filters.empNo}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
-            if (data.success) setCertificateData(data.data);
+            if (data.success) dispatch({ type: 'FETCH_CERT_DONE', data: data.data });
             else toast.error(data.message);
-        } catch (error) {
+        } catch {
             toast.error("Failed to fetch Pay Certificate");
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'SET_FIELD', field: 'isLoading', value: false });
         }
     };
 
     useEffect(() => {
         if (filters.empNo) fetchCertificate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.empNo, filters.month, filters.year]);
 
     const handlePrint = () => {
@@ -135,7 +127,7 @@ export default function PayCertificate() {
                             {searchTerm && employees.length > 0 && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
                                     {employees.map(emp => (
-                                        <button key={emp.EMPNO} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex flex-col" onClick={() => { setFilters({ ...filters, empNo: emp.EMPNO }); setSearchTerm(""); }}>
+                                        <button key={emp.EMPNO} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex flex-col" onClick={() => { dispatch({ type: 'SET_FILTER', field: 'empNo', value: emp.EMPNO }); dispatch({ type: 'SET_FIELD', field: 'searchTerm', value: "" }); }}>
                                             <span className="font-bold">{emp.SNAME}</span>
                                             <span className="text-xs text-gray-500">{emp.EMPNO} - {emp.Designation}</span>
                                         </button>
@@ -146,14 +138,14 @@ export default function PayCertificate() {
                         <div className="flex gap-2">
                             <select
                                 value={filters.month}
-                                onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                                onChange={(e) => dispatch({ type: 'SET_FILTER', field: 'month', value: e.target.value })}
                                 className="bg-white border rounded px-2 py-1 text-sm outline-none font-bold"
                             >
                                 {monthNames.map((m, i) => <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>)}
                             </select>
                             <select
                                 value={filters.year}
-                                onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                                onChange={(e) => dispatch({ type: 'SET_FILTER', field: 'year', value: e.target.value })}
                                 className="bg-white border rounded px-2 py-1 text-sm outline-none font-bold"
                             >
                                 {["2024", "2025", "2026"].map(y => <option key={y} value={y}>{y}</option>)}

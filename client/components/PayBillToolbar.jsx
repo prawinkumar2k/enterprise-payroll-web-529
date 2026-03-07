@@ -1,18 +1,27 @@
 import React from "react";
 import { Printer, Eraser } from "lucide-react";
 
+const EMPTY_YEARS = [];
+
 const PayBillToolbar = ({
     filters,
     setFilters,
     handleClear,
     handlePrint,
     hasData,
-    isAbstract = false
+    isAbstract = false,
+    availableYears = EMPTY_YEARS
 }) => {
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    // Build year list: prefer dynamic list from DB, else 2013→current year
+    const currentYear = new Date().getFullYear();
+    const yearList = availableYears.length > 0
+        ? [...availableYears].sort((a, b) => b - a)
+        : Array.from({ length: currentYear - 2013 + 1 }, (_, i) => String(currentYear - i));
 
     return (
         <div className="p-4 bg-white border-b border-gray-200 shadow-sm print:hidden">
@@ -49,7 +58,7 @@ const PayBillToolbar = ({
                                 onChange={(e) => setFilters({ ...filters, year: e.target.value })}
                                 className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold outline-none"
                             >
-                                {["2023", "2024", "2025", "2026"].map(y => (
+                                {yearList.map(y => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>

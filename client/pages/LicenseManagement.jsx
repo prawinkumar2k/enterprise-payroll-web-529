@@ -1,16 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import DashboardLayout from "../components/DashboardLayout";
-import { Database, ShieldCheck, Cpu, HardDrive, Key, AlertTriangle, FileCheck, ExternalLink, Cloud, Link2, CheckCircle2 } from 'lucide-react';
+import { Database, ShieldCheck, Cpu, Key, AlertTriangle, FileCheck, ExternalLink, Cloud, Link2, CheckCircle2 } from 'lucide-react';
+
+const initialLicenseState = {
+    status: null,
+    tenant: null,
+    loading: true,
+    activationKey: "",
+    onboarding: { tenantId: "", token: "" },
+};
+
+function licenseReducer(state, action) {
+    switch (action.type) {
+        case 'SET_FIELD': return { ...state, [action.field]: action.value };
+        default: return state;
+    }
+}
 
 export default function LicenseManagement() {
-    const [status, setStatus] = useState(null);
-    const [tenant, setTenant] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [activationKey, setActivationKey] = useState("");
-    const [onboarding, setOnboarding] = useState({ tenantId: "", token: "" });
+    const [state, dispatch] = useReducer(licenseReducer, initialLicenseState);
+    const { status, tenant, loading, activationKey, onboarding } = state;
 
     useEffect(() => {
-        Promise.all([fetchLicenseStatus(), fetchTenantStatus()]).finally(() => setLoading(false));
+        Promise.all([fetchLicenseStatus(), fetchTenantStatus()]).finally(() => dispatch({ type: 'SET_FIELD', field: 'loading', value: false }));
     }, []);
 
     const fetchLicenseStatus = async () => {
@@ -19,7 +31,7 @@ export default function LicenseManagement() {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
-            if (data.success) setStatus(data);
+            if (data.success) dispatch({ type: 'SET_FIELD', field: 'status', value: data });
         } catch (e) { console.error(e); }
     };
 
@@ -29,7 +41,7 @@ export default function LicenseManagement() {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
-            if (data.success) setTenant(data);
+            if (data.success) dispatch({ type: 'SET_FIELD', field: 'tenant', value: data });
         } catch (e) { console.error(e); }
     };
 
@@ -50,12 +62,12 @@ export default function LicenseManagement() {
             } else {
                 alert(data.message);
             }
-        } catch (e) { alert('Linking failed.'); }
+        } catch { alert('Linking failed.'); }
     };
 
     const handleActivate = async () => {
         if (!activationKey) return;
-        setLoading(true);
+        dispatch({ type: 'SET_FIELD', field: 'loading', value: true });
         try {
             const res = await fetch('/api/system/license/activate', {
                 method: 'POST',
@@ -72,8 +84,8 @@ export default function LicenseManagement() {
             } else {
                 alert(data.message);
             }
-        } catch (e) { alert('Activation failed.'); }
-        finally { setLoading(false); }
+        } catch { alert('Activation failed.'); }
+        finally { dispatch({ type: 'SET_FIELD', field: 'loading', value: false }); }
     };
 
     if (loading) return <div className="p-8 flex items-center justify-center h-full"><p className="animate-pulse font-bold text-foreground/40 text-sm uppercase tracking-widest">Scanning Hardware...</p></div>;
@@ -208,14 +220,14 @@ export default function LicenseManagement() {
                                         type="text"
                                         placeholder="Tenant ID (e.g. school-01)"
                                         value={onboarding.tenantId}
-                                        onChange={(e) => setOnboarding({ ...onboarding, tenantId: e.target.value })}
+                                        onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'onboarding', value: { ...onboarding, tenantId: e.target.value } })}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                     <input
                                         type="password"
                                         placeholder="Activation Token (SAAS_...)"
                                         value={onboarding.token}
-                                        onChange={(e) => setOnboarding({ ...onboarding, token: e.target.value })}
+                                        onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'onboarding', value: { ...onboarding, token: e.target.value } })}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -236,12 +248,13 @@ export default function LicenseManagement() {
                             <p className="opacity-80 text-sm font-medium">Enter your offline activation code to unlock full enterprise features.</p>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase opacity-60 tracking-widest pl-1">Serial Key</label>
+                            <label htmlFor="serial-key" className="text-[10px] font-black uppercase opacity-60 tracking-widest pl-1">Serial Key</label>
                             <input
+                                id="serial-key"
                                 type="text"
                                 placeholder="XXXX-XXXX-XXXX-XXXX"
                                 value={activationKey}
-                                onChange={(e) => setActivationKey(e.target.value)}
+                                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'activationKey', value: e.target.value })}
                                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-lg font-mono font-bold placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 transition-all uppercase"
                             />
                         </div>
@@ -252,7 +265,7 @@ export default function LicenseManagement() {
                             Activate Product
                         </button>
                         <p className="text-[10px] text-center opacity-60 font-medium">
-                            Need a license? <a href="#" className="underline font-bold flex inline-flex items-center gap-0.5">Contact Sales <ExternalLink className="w-2 h-2" /></a>
+                            Need a license? <a href="mailto:sales@company.com" className="underline font-bold inline-flex items-center gap-0.5">Contact Sales <ExternalLink className="w-2 h-2" /></a>
                         </p>
                     </div>
                 </div>

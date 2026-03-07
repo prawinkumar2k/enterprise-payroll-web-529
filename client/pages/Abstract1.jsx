@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import {
-    Printer,
     Home,
     Loader2,
     AlertCircle
@@ -9,36 +8,36 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import PayBillToolbar from "../components/PayBillToolbar";
-import { Card } from "@/components/ui/card";
-import { paginateData, REPORT_CONFIGS, getMonthName, p, fmt } from "../utils/printEngine";
+import { useLatestMonthYear } from "../hooks/useLatestMonthYear";
+import { REPORT_CONFIGS, p, fmt } from "../utils/printEngine";
 
 export default function Abstract1() {
     const navigate = useNavigate();
-    const now = new Date();
-    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
-    const currentYear = String(now.getFullYear());
+    const { latest, availableYears } = useLatestMonthYear();
+
+    const fallbackMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+    const fallbackYear = String(new Date().getFullYear());
 
     const [filters, setFilters] = useState({
         category: "ALL",
-        month: currentMonth,
-        year: currentYear,
+        month: null,
+        year: null,
         withSignature: true,
         paySlip: false,
         bonusPayBill: false
     });
 
+    // Derive active period: use latest payroll month until user explicitly changes
+    const activeMonth = filters.month ?? latest?.month ?? fallbackMonth;
+    const activeYear  = filters.year  ?? latest?.year  ?? fallbackYear;
+
     const [reportData, setReportData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const rowsPerPage = REPORT_CONFIGS.ABSTRACT_1.rowsPerPage;
-
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
+    const _rowsPerPage = REPORT_CONFIGS.ABSTRACT_1.rowsPerPage;
 
     const fetchReport = async () => {
         setIsLoading(true);
-        const monthYear = `${filters.month}-${filters.year}`;
+        const monthYear = `${activeMonth}-${activeYear}`;
         try {
             const response = await fetch(`/api/reports/abstract-1?monthYear=${monthYear}&category=${filters.category}&bonus=${filters.bonusPayBill}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -50,7 +49,7 @@ export default function Abstract1() {
                 toast.error(data.message);
                 setReportData([]);
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to fetch Abstract 1 data");
         } finally {
             setIsLoading(false);
@@ -59,14 +58,15 @@ export default function Abstract1() {
 
     useEffect(() => {
         fetchReport();
-    }, [filters.month, filters.year, filters.category, filters.bonusPayBill]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeMonth, activeYear, filters.category, filters.bonusPayBill]);
 
     const handlePrint = () => {
         navigate('/print-report', {
             state: {
                 data: reportData,
                 reportType: 'ABSTRACT_1',
-                filters: filters,
+                filters: { ...filters, month: activeMonth, year: activeYear },
                 orientation: 'landscape'
             }
         });
@@ -75,8 +75,8 @@ export default function Abstract1() {
         setFilters({
             ...filters,
             category: "ALL",
-            month: currentMonth,
-            year: currentYear,
+            month: null,
+            year: null,
             bonusPayBill: false
         });
     };
@@ -93,9 +93,7 @@ export default function Abstract1() {
         }, { gross: 0, epf: 0, esi: 0, it: 0, pt: 0, net: 0 });
     }, [reportData]);
 
-    const pages = useMemo(() => {
-        return paginateData(reportData, rowsPerPage);
-    }, [reportData, rowsPerPage]);
+
 
     return (
         <DashboardLayout activeRoute="reports">
@@ -111,12 +109,13 @@ export default function Abstract1() {
                     </button>
                     <div className="h-4 w-px bg-gray-300 mx-2" />
                     <PayBillToolbar
-                        filters={filters}
+                        filters={{ ...filters, month: activeMonth, year: activeYear }}
                         setFilters={setFilters}
                         handleClear={handleClear}
                         handlePrint={handlePrint}
                         hasData={reportData.length > 0}
                         isAbstract={true}
+                        availableYears={availableYears}
                     />
                 </div>
 
@@ -157,7 +156,7 @@ export default function Abstract1() {
                                     </thead>
                                     <tbody className="divide-y">
                                         {reportData.map((row, idx) => (
-                                            <tr key={idx} className="divide-x hover:bg-gray-50/50">
+                                            <tr key={row.Category || String(row.DGroup) || idx} className="divide-x hover:bg-gray-50/50">
                                                 <td className="px-3 py-2">{idx + 1}</td>
                                                 <td className="px-3 py-2 font-bold text-gray-700">{row.Category || `Group ${row.DGroup}`}</td>
                                                 <td className="px-3 py-2 text-right">{fmt(row.GrossPay)}</td>

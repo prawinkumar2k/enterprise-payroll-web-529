@@ -1,5 +1,5 @@
 import PublicLayout from "../components/PublicLayout";
-import { Search, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const FAQS = [
     {
@@ -35,8 +35,8 @@ export default function FAQ() {
                     </div>
 
                     <div className="space-y-6">
-                        {FAQS.map((f, i) => (
-                            <div key={i} className="group p-8 bg-gray-50 border border-gray-100 rounded-[32px] hover:bg-white hover:shadow-xl transition-all">
+                        {FAQS.map((f) => (
+                            <div key={f.q} className="group p-8 bg-gray-50 border border-gray-100 rounded-[32px] hover:bg-white hover:shadow-xl transition-all">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-xl font-bold text-gray-900">{f.q}</h3>
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-90 transition-transform"><ChevronRight className="w-4 h-4" /></div>

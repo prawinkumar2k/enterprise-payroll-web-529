@@ -11,7 +11,7 @@ export default function About() {
                             Engineering <br />The <span className="text-primary italic">Extraordinary</span>
                         </h1>
                         <p className="max-w-3xl mx-auto text-xl text-gray-500 font-medium leading-relaxed">
-                            SearchFirst Technologies is an elite software engineering firm dedicated to building the backbone of tomorrow's enterprise digital landscape.
+                            SearchFirst Technologies is an elite software engineering firm dedicated to building the backbone of tomorrow&apos;s enterprise digital landscape.
                         </p>
                     </div>
 
@@ -32,8 +32,8 @@ export default function About() {
                                     { icon: Target, label: "Precision", val: "99.9%" },
                                     { icon: Award, label: "Quality", val: "A+" },
                                     { icon: Users, label: "Support", val: "24/7" }
-                                ].map((item, i) => (
-                                    <div key={i} className="text-center">
+                                ].map((item) => (
+                                    <div key={item.label} className="text-center">
                                         <item.icon className="w-8 h-8 text-primary mx-auto mb-4" />
                                         <div className="text-2xl font-black text-gray-900">{item.val}</div>
                                         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{item.label}</div>

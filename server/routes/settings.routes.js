@@ -1,17 +1,14 @@
 import express from 'express';
 import { getAllSettings, updateSettings } from '../controllers/settings.controller.js';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public endpoint for basic settings (org info, feature flags, etc.)
-// This allows the login page and feature routes to access settings without auth
-router.get('/global', getAllSettings);
-
-// Protected endpoints (admin only)
+// All settings routes require auth so tenant context is established
+// and settings are read from/written to the correct company DB.
 router.use(authenticate);
-router.use(authorize('admin'));
 
+router.get('/global', getAllSettings);
 router.put('/global', updateSettings);
 
 export default router;

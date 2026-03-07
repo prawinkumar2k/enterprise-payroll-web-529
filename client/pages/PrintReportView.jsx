@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useReducer } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     paginateData,
@@ -10,6 +10,7 @@ import {
 import PrintPage from '../components/print/PrintPage';
 import ReportHeader from '../components/print/ReportHeader';
 import ReportFooter from '../components/print/ReportFooter';
+import PaySlip from '../components/PaySlip';
 import { Loader2 } from 'lucide-react';
 
 import { useSettings } from '../context/SettingsContext';
@@ -19,6 +20,23 @@ import { useSettings } from '../context/SettingsContext';
  * Implements staged/batched rendering for 100+ page reports.
  * Driven entirely by System Configuration (Settings).
  */
+
+// Reducer for batched rendering state — avoids cascading setState calls
+const renderReducer = (state, action) => {
+    switch (action.type) {
+        case 'ADD_BATCH':
+            return {
+                ...state,
+                renderedPages: [...state.renderedPages, ...action.batch],
+                batchIndex: state.batchIndex + 1,
+            };
+        case 'DONE':
+            return { ...state, isRendering: false };
+        default:
+            return state;
+    }
+};
+
 const PrintReportView = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -49,9 +67,12 @@ const PrintReportView = () => {
     const config = customConfig || { ...defaultConfig, title: reportTitle, orientation };
     const rowsPerPage = config.rowsPerPage;
 
-    const [renderedPages, setRenderedPages] = useState([]);
-    const [batchIndex, setBatchIndex] = useState(0);
-    const [isRendering, setIsRendering] = useState(true);
+    const [renderState, dispatchRender] = useReducer(renderReducer, {
+        renderedPages: [],
+        batchIndex: 0,
+        isRendering: true,
+    });
+    const { renderedPages, batchIndex, isRendering } = renderState;
 
     // 1. Prepare all pages in memory first (Data Only)
     const allPages = useMemo(() => {
@@ -126,14 +147,13 @@ const PrintReportView = () => {
                 const nextBatchEnd = Math.min(nextBatchStart + batchSize, allPages.length);
                 const nextBatch = allPages.slice(nextBatchStart, nextBatchEnd);
 
-                setRenderedPages(prev => [...prev, ...nextBatch]);
-                setBatchIndex(prev => prev + 1);
+                dispatchRender({ type: 'ADD_BATCH', batch: nextBatch });
             }, 100); // 100ms pause for browser paint
 
             return () => clearTimeout(timer);
         } else {
             // All pages rendered to DOM
-            setIsRendering(false);
+            dispatchRender({ type: 'DONE' });
         }
     }, [batchIndex, allPages, data, navigate]);
 
@@ -186,21 +206,36 @@ const PrintReportView = () => {
             <div className="print-staged-container">
                 {renderedPages.map((pageRows, pageIdx) => (
                     <PrintPage
-                        key={pageIdx}
+                        key={`page-${pageIdx}`}
                         pageNumber={pageIdx + 1}
                         totalPages={allPages.length}
                         orientation={orientation}
                         header={
-                            <ReportHeader
-                                reportTitle={config.title}
-                                month={filters?.month ? getMonthName(filters.month) : ''}
-                                year={filters?.year || ''}
-                            />
+                            reportType === 'PAY_SLIP' ? null : (
+                                <ReportHeader
+                                    reportTitle={config.title}
+                                    month={filters?.month ? getMonthName(filters.month) : ''}
+                                    year={filters?.year || ''}
+                                />
+                            )
                         }
-                        footer={<ReportFooter />}
+                        footer={
+                            reportType === 'PAY_SLIP' ? null : (
+                                <ReportFooter withSignature={filters?.withSignature !== false} />
+                            )
+                        }
                     >
                         {/* Dynamic Report Content Injection */}
-                        {renderReportTable(reportType, pageRows, pageIdx, rowsPerPage, allPages.length, data.length, totals)}
+                        <ReportTableContent
+                            type={reportType}
+                            rows={pageRows}
+                            pageIdx={pageIdx}
+                            rowsPerPage={rowsPerPage}
+                            totalPages={allPages.length}
+                            totalRecords={data.length}
+                            totals={totals}
+                            filters={filters}
+                        />
                     </PrintPage>
                 ))}
             </div>
@@ -209,7 +244,7 @@ const PrintReportView = () => {
 };
 
 // HELPER: Selective Table Rendering 
-const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRecords, totals) => {
+const ReportTableContent = ({ type, rows, pageIdx, rowsPerPage, totalPages, totalRecords, totals, filters }) => {
     switch (type) {
         case 'PAY_BILL':
             // FORCED ORIENTATION & HARD WIDTHS (MANDATORY)
@@ -231,7 +266,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.EMPNO || idx}>
                                 <td>{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-mono">{row.EMPNO}</td>
                                 <td className="text-left font-bold">{row.SNAME}</td>
@@ -273,7 +308,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.EMPNO || idx}>
                                 <td>{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-mono">{row.EMPNO}</td>
                                 <td className="text-left font-bold" style={{ fontSize: '9px' }}>
@@ -309,7 +344,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.Category || String(row.DGroup) || idx}>
                                 <td className="text-center">{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-bold text-left">{row.Category || `Group ${row.DGroup}`}</td>
                                 <td className="text-right">{fmt(row.GrossPay)}</td>
@@ -338,7 +373,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.EMPNO || idx}>
                                 <td className="text-center">{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-mono text-[10pt]">{row.EMPNO}</td>
                                 <td className="text-left font-bold">{row.SNAME}</td>
@@ -371,7 +406,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={`${row.EMPNO}-${row.ADATE || idx}`}>
                                 <td>{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td>{new Date(row.ADATE).toLocaleDateString('en-IN')}</td>
                                 <td className="font-mono">{row.EMPNO}</td>
@@ -399,7 +434,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.CategoryName || row.Category || String(row.DGroup) || idx}>
                                 <td className="text-center">{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-bold text-left">{row.CategoryName || row.Category || `Group ${row.DGroup}`}</td>
                                 <td className="text-right">{fmt(row.GROSSPAY)}</td>
@@ -436,7 +471,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.Category || row.CategoryName || String(row.DGroup) || idx}>
                                 <td className="text-center">{pageIdx * rowsPerPage + idx + 1}</td>
                                 <td className="font-bold text-left">{row.Category || row.CategoryName || `Group ${row.DGroup}`}</td>
                                 <td className="text-right">{fmt(row.GROSS)}</td>
@@ -476,7 +511,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </thead>
                     <tbody>
                         {rows.map((row, idx) => (
-                            <tr key={idx}>
+                            <tr key={row.EMPNO || idx}>
                                 <td className="font-mono">{row.EMPNO}</td>
                                 <td className="text-left font-bold">{row.SNAME}</td>
                                 <td>{row.PresentDays || 0}</td>
@@ -491,7 +526,7 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     </tbody>
                 </table>
             );
-        case 'PAY_CERTIFICATE':
+        case 'PAY_CERTIFICATE': {
             const cert = rows[0]; // Always 1 per page for certificate
             if (!cert) return null;
             return (
@@ -549,6 +584,20 @@ const renderReportTable = (type, rows, pageIdx, rowsPerPage, totalPages, totalRe
                     <p className="mt-12 text-[9pt] italic text-gray-400 font-serif">Note: This is a computer generated certificate and does not require a physical seal if verified digitally.</p>
                 </div>
             );
+        }
+        case 'PAY_SLIP': {
+            // One pay slip per page (rowsPerPage: 1)
+            const slip = rows[0];
+            if (!slip) return null;
+            const monthYearLabel = filters ? `${getMonthName(filters.month)} ${filters.year}` : '';
+            return (
+                <PaySlip
+                    data={slip}
+                    monthYear={monthYearLabel}
+                    withSignature={filters?.withSignature !== false}
+                />
+            );
+        }
         default:
             return <div>Unsupported Report Type: {type}</div>;
     }

@@ -6,7 +6,12 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "lint": "eslint . --max-warnings 0",
+        "lint:fix": "eslint . --fix",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@hookform/resolvers": "^3.3.4",
@@ -63,10 +68,21 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
         "@vitejs/plugin-react": "^4.2.1",
         "autoprefixer": "^10.4.17",
+        "eslint": "^10.0.2",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^7.0.1",
+        "eslint-plugin-react-refresh": "^0.5.2",
+        "globals": "^17.4.0",
+        "jsdom": "^28.1.0",
         "postcss": "^8.4.35",
         "tailwindcss": "^3.4.1",
-        "vite": "^5.1.0"
+        "vite": "^5.1.0",
+        "vitest": "^4.0.18"
     }
 }

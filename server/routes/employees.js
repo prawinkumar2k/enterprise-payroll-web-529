@@ -5,7 +5,8 @@ import {
     updateEmployee,
     deleteEmployee,
     getTrashedEmployees,
-    restoreEmployee
+    restoreEmployee,
+    getNextEmpno
 } from '../controllers/employeeController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.use(authenticate);
 router.use(authorize('admin', 'hr_officer'));
 
+router.get('/next-empno', getNextEmpno);
 router.get('/', getEmployees);
 router.get('/trash', getTrashedEmployees);
 router.post('/', createEmployee);

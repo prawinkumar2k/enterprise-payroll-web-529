@@ -46,3 +46,13 @@ coverage
 # Misc
 *.md
 !README.md
+
+# Debug/fix scripts
+_*.js
+_*.cjs
+check_*.js
+debug*.js
+debug_output.txt
+err.txt
+audit_report.txt
+*.sql

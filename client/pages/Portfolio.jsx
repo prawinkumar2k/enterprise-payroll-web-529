@@ -45,8 +45,8 @@ export default function Portfolio() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-32">
-                        {CASE_STUDIES.map((caseStudy, i) => (
-                            <div key={i} className="group overflow-hidden rounded-[50px] border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-2xl transition-all duration-700">
+                        {CASE_STUDIES.map((caseStudy) => (
+                            <div key={caseStudy.title} className="group overflow-hidden rounded-[50px] border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-2xl transition-all duration-700">
                                 <div className="p-12">
                                     <div className="flex justify-between items-start mb-12">
                                         <div className="px-4 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full">
@@ -76,8 +76,8 @@ export default function Portfolio() {
 
                     <div className="text-center border-y border-gray-100 py-32">
                         <h2 className="text-4xl font-black text-gray-900 mb-8">Ready to be our next Success Story?</h2>
-                        <p className="max-w-xl mx-auto text-gray-500 mb-12 italic">"Beyond software, we build the foundations of market leadership."</p>
-                        <button className="px-12 py-5 bg-primary text-white rounded-2xl font-black text-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary/20">Let's Talk Strategy</button>
+                        <p className="max-w-xl mx-auto text-gray-500 mb-12 italic">&ldquo;Beyond software, we build the foundations of market leadership.&rdquo;</p>
+                        <button className="px-12 py-5 bg-primary text-white rounded-2xl font-black text-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary/20">Let&apos;s Talk Strategy</button>
                     </div>
                 </div>
             </div>

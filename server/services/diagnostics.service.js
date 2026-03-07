@@ -71,18 +71,33 @@ export const createDiagnosticPackage = async (userDataPath) => {
 
 /**
  * Data Integrity Check
- * Runs SQLite integrity verification and validates schema presence.
+ * Validates schema presence against MySQL (online mode) or SQLite (offline mode).
  */
 export const verifyDataIntegrity = async (db) => {
     try {
-        // SQLite PRAGMA check
+        const criticalTables = ['userdetails', 'payroll_runs', 'empdet'];
+
+        if (!db) {
+            // MySQL / online mode — check via information_schema
+            const { default: dbManager } = await import('../database/dbManager.js');
+            for (const table of criticalTables) {
+                const [rows] = await dbManager.query(
+                    `SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+                    [table]
+                );
+                if (!rows || rows.length === 0) {
+                    return { valid: false, reason: `Missing Critical Table: ${table}` };
+                }
+            }
+            return { valid: true };
+        }
+
+        // SQLite offline mode — PRAGMA integrity check
         const integrity = db.prepare('PRAGMA integrity_check').get();
         if (integrity.integrity_check !== 'ok') {
             return { valid: false, reason: `SQLite Integrity Failure: ${integrity.integrity_check}` };
         }
 
-        // Schema validation - Check critical tables
-        const criticalTables = ['userdetails', 'payroll_runs', 'empdet'];
         for (const table of criticalTables) {
             const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
             if (!result) {
