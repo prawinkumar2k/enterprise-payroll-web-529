@@ -2,6 +2,8 @@ import dbManager from '../database/dbManager.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { randomUUID } from 'crypto';
 import metricsService from '../services/metrics.service.js';
+import cache from '../services/cache.service.js';
+import summaryService from '../services/summary.service.js';
 
 export const getDailyAttendance = async (req, res) => {
     const { date, category } = req.query;
@@ -11,26 +13,23 @@ export const getDailyAttendance = async (req, res) => {
     }
 
     try {
-        // 1. Fetch Existing Attendance for the Date
-        const [attendanceRows] = await dbManager.query(
-            'SELECT EMPNO, AttType, Remark, Sessions, LOP, `Leave` FROM staffattendance WHERE DATE(ADATE) = ?',
-            [date]
-        );
+        // Fix: Use range instead of DATE() wrapper — allows index on ADATE to be used
+        const dateStart = `${date} 00:00:00`;
+        const dateEnd = `${date} 23:59:59`;
 
-        // 2. Fetch Active Employees
-        let empQuery = `
-            SELECT EMPNO, SNAME, Designation, Category 
-            FROM empdet 
-            WHERE (CheckStatus = 'Active' OR CheckStatus = 'True' OR CheckStatus IS NULL)
-        `;
-        let empParams = [];
-
-        if (category && category !== 'ALL') {
-            empQuery += ' AND Category LIKE ?';
-            empParams.push(`%${category}%`);
-        }
-
-        const [employees] = await dbManager.query(empQuery, empParams);
+        // Run both queries in parallel
+        const [[attendanceRows], [employees]] = await Promise.all([
+            dbManager.query(
+                'SELECT EMPNO, AttType, Remark, Sessions, LOP, `Leave` FROM staffattendance WHERE ADATE BETWEEN ? AND ?',
+                [dateStart, dateEnd]
+            ),
+            dbManager.query(
+                category && category !== 'ALL'
+                    ? `SELECT EMPNO, SNAME, Designation, Category FROM empdet WHERE (CheckStatus = 'Active' OR CheckStatus = 'True' OR CheckStatus IS NULL) AND Category LIKE ?`
+                    : `SELECT EMPNO, SNAME, Designation, Category FROM empdet WHERE (CheckStatus = 'Active' OR CheckStatus = 'True' OR CheckStatus IS NULL)`,
+                category && category !== 'ALL' ? [`%${category}%`] : []
+            )
+        ]);
 
         // 3. Merge Data
         const attendanceMap = new Map();
@@ -58,8 +57,8 @@ export const getDailyAttendance = async (req, res) => {
         res.json({ success: true, data });
 
     } catch (error) {
-        console.error('Get Daily Attendance Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching attendance' });
+        console.error('Get Daily Attendance Error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load attendance' });
     }
 };
 
@@ -77,55 +76,70 @@ export const markDailyAttendance = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // 1. Check if Payroll is Locked for this Month (Optional - Implementation later)
-        // const [lockCheck] = await connection.query('SELECT * FROM payroll_locks WHERE month_year = ?', [formatMonthYear(date)]);
-        // if (lockCheck.length > 0) throw new Error("Payroll already finalized for this month.");
+        // ── BULK DELETE then BULK INSERT (was: N deletions + N insertions in a loop) ──────
+        // Step 1: Delete all existing attendance for this date in ONE query
+        const dateStart = `${date} 00:00:00`;
+        const dateEnd = `${date} 23:59:59`;
+        await connection.query(
+            'DELETE FROM staffattendance WHERE ADATE BETWEEN ? AND ?',
+            [dateStart, dateEnd]
+        );
 
-        // 2. Upsert Records
-        for (const record of records) {
-            const { EMPNO, Status, Remark, SNAME, Designation } = record;
-
-            // Calculate Leave/LOP logic based on Status
-            // (Assuming Status is one of: Present, Absent, CL, ML, OD, LOP, WO, H)
-            let leaveCount = (Status !== 'Present' && Status !== 'WO' && Status !== 'H') ? 1.0 : 0.0;
-            let lopCount = (Status === 'LOP' || Status === 'Absent') ? 1.0 : 0.0;
-
-            // Delete existing record for this employee on this date to replace it
-            await connection.query(
-                'DELETE FROM staffattendance WHERE EMPNO = ? AND DATE(ADATE) = ?',
-                [EMPNO, date]
-            );
-
-            if (Status) { // Only insert if a status is provided
+        // Step 2: Build one bulk INSERT for all records with a status
+        const activeRecords = records.filter(r => r.Status);
+        if (activeRecords.length > 0) {
+            const now = new Date().toISOString();
+            const values = activeRecords.map(record => {
+                const { EMPNO, Status, Remark, SNAME, Designation } = record;
+                const leaveCount = (Status !== 'Present' && Status !== 'WO' && Status !== 'H') ? 1.0 : 0.0;
+                const lopCount = (Status === 'LOP' || Status === 'Absent') ? 1.0 : 0.0;
                 const uuid = randomUUID();
-                await connection.query(
-                    `INSERT INTO staffattendance 
-                    (uuid, ADATE, EMPNO, SNAME, DESIGNATION, Category, AttType, \`Leave\`, Sessions, Remark, LOP, CREATED_BY, is_synced, device_id) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'SERVER_01')`,
-                    [uuid, date, EMPNO, SNAME, Designation, record.Category || '', Status, leaveCount, 'Full', Remark || '', lopCount, user.username]
-                );
-            }
+                return [uuid, date, EMPNO, SNAME || '', Designation || '', record.Category || '',
+                    Status, leaveCount, 'Full', Remark || '', lopCount,
+                    user.username, 0, 'SERVER_01', now, now];
+            });
+
+            const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+            const flat = values.flat();
+
+            await connection.query(
+                `INSERT INTO staffattendance 
+                 (uuid, ADATE, EMPNO, SNAME, DESIGNATION, Category, AttType, \`Leave\`, Sessions, Remark, LOP, CREATED_BY, is_synced, device_id, created_at, updated_at) 
+                 VALUES ${placeholders}`,
+                flat
+            );
         }
 
         await connection.commit();
 
-        // 3. Audit Logging
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'UPDATE_ATTENDANCE',
-            module: 'ATTENDANCE',
-            description: `Updated attendance for ${date} (${records.length} records)`,
-            newValue: { date, count: records.length },
-            ip: req.socket.remoteAddress
-        });
+        // ── Invalidate cache + rebuild summary in background (non-blocking) ──
+        const dateObj = new Date(date);
+        const monthStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+        cache.invalidate(`dashboard:`);
+        cache.invalidate(`summary:${monthStr}`);
+        cache.invalidate(`report:monthly-summary:${monthStr}`);
+        // Async rebuild — don't await, don't block response
+        summaryService.rebuildMonth(monthStr).catch(() => { });
 
-        res.json({ success: true, message: 'Attendance updated successfully' });
+        // Audit log (non-fatal)
+        try {
+            await logAudit({
+                userId: user.username,
+                username: user.name || user.username,
+                actionType: 'UPDATE_ATTENDANCE',
+                module: 'ATTENDANCE',
+                description: `Bulk updated attendance for ${date} (${records.length} records, ${activeRecords.length} active)`,
+                newValue: { date, count: records.length },
+                ip: req.socket?.remoteAddress
+            });
+        } catch { }
+
+        res.json({ success: true, message: `Attendance saved — ${activeRecords.length} records updated` });
 
     } catch (error) {
-        await connection.rollback();
-        console.error('Mark Attendance Error:', error);
-        res.status(500).json({ success: false, message: error.message || 'Server error saving attendance' });
+        try { await connection.rollback(); } catch { }
+        console.error('[Attendance] Mark error:', error.message);
+        res.status(400).json({ success: false, message: error.message || 'Error saving attendance' });
     } finally {
         connection.release();
     }
@@ -139,34 +153,31 @@ export const getMonthlyAttendance = async (req, res) => {
     }
 
     try {
-        const startDate = `${year}-${month}-01`;
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // Last day of month
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
 
-        // 1. Fetch All Active Employees and join with their monthly summary
-        const query = `
-            SELECT 
-                e.EMPNO,
-                e.SNAME,
-                COUNT(CASE WHEN a.AttType IN ('Present', 'OD', 'H') THEN 1 END) as PresentDays,
-                COUNT(CASE WHEN a.AttType = 'Absent' THEN 1 END) as AbsentDays,
-                COUNT(CASE WHEN a.AttType = 'LOP' THEN 1 END) as LOPDays,
-                COUNT(CASE WHEN a.AttType IN ('CL', 'ML', 'PL') THEN 1 END) as LeaveDays,
-                COUNT(CASE WHEN a.AttType = 'WO' THEN 1 END) as WeekOffs,
-                COUNT(CASE WHEN a.AttType = 'OD' THEN 1 END) as ODDays,
-                COUNT(CASE WHEN a.AttType = 'H' THEN 1 END) as HalfDays
-            FROM empdet e
-            LEFT JOIN staffattendance a ON e.EMPNO = a.EMPNO 
-                AND a.ADATE BETWEEN ? AND ?
-            WHERE e.CheckStatus IN ('Active', 'True') OR e.CheckStatus IS NULL
-            GROUP BY e.EMPNO, e.SNAME
-        `;
+        // ── Fast path: summary table (pre-aggregated, sub-10ms) ───────────────
+        const rows = await summaryService.getSummary(monthStr);
 
-        const [rows] = await dbManager.query(query, [startDate, endDate]);
-        res.json({ success: true, data: rows });
+        // Map summary table columns to the shape the frontend expects
+        const data = rows.map(r => ({
+            EMPNO: r.empno,
+            SNAME: r.empname,
+            DESIGNATION: r.designation,
+            Category: r.category,
+            PresentDays: r.present_days || 0,
+            AbsentDays: r.absent_days || 0,
+            LOPDays: r.lop_days || 0,
+            LeaveDays: r.leave_days || 0,
+            WeekOffs: r.weekoff_days || 0,
+            ODDays: r.od_days || 0,
+            HalfDays: r.half_days || 0,
+        }));
+
+        res.json({ success: true, data });
 
     } catch (error) {
-        console.error('Monthly Attendance Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching monthly summary' });
+        console.error('Monthly Attendance Error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load monthly summary' });
     }
 };
 
@@ -203,29 +214,34 @@ export const getAttendanceReports = async (req, res) => {
                 params = [startDate, endDate];
                 break;
 
-            case 'monthly-summary':
-                query = `
-                    SELECT
-                        e.EMPNO,
-                        e.SNAME,
-                        e.DESIGNATION,
-                        e.Category,
-                        COUNT(CASE WHEN a.AttType IN ('Present', 'OD', 'H') THEN 1 END) as PresentDays,
-                        COUNT(CASE WHEN a.AttType = 'Absent' THEN 1 END) as AbsentDays,
-                        COUNT(CASE WHEN a.AttType = 'LOP' THEN 1 END) as LOPDays,
-                        COUNT(CASE WHEN a.AttType IN ('CL', 'ML', 'PL') THEN 1 END) as LeaveDays,
-                        COUNT(CASE WHEN a.AttType = 'WO' THEN 1 END) as WeekOffs,
-                        COUNT(CASE WHEN a.AttType = 'OD' THEN 1 END) as ODDays,
-                        COUNT(CASE WHEN a.AttType = 'H' THEN 1 END) as HalfDays
-                    FROM empdet e
-                    LEFT JOIN staffattendance a ON e.EMPNO = a.EMPNO
-                        AND a.ADATE BETWEEN ? AND ?
-                    WHERE e.CheckStatus IN ('Active', 'True') OR e.CheckStatus IS NULL
-                    GROUP BY e.EMPNO, e.SNAME, e.DESIGNATION, e.Category
-                    ORDER BY e.EMPNO
-                `;
-                params = [startDate, endDate];
-                break;
+            case 'monthly-summary': {
+                // ── Fast path: hit pre-aggregated summary table ───────────────────
+                const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+                const cacheKey = `report:monthly-summary:${monthStr}`;
+                const cached = cache.get(cacheKey);
+                if (cached) {
+                    res.set('X-Cache', 'HIT');
+                    return res.json({ success: true, data: cached });
+                }
+
+                const summaryRows = await summaryService.getSummary(monthStr);
+                const data = summaryRows.map(r => ({
+                    EMPNO: r.empno,
+                    SNAME: r.empname,
+                    DESIGNATION: r.designation,
+                    Category: r.category,
+                    PresentDays: r.present_days || 0,
+                    AbsentDays: r.absent_days || 0,
+                    LOPDays: r.lop_days || 0,
+                    LeaveDays: r.leave_days || 0,
+                    WeekOffs: r.weekoff_days || 0,
+                    ODDays: r.od_days || 0,
+                    HalfDays: r.half_days || 0,
+                }));
+                cache.set(cacheKey, data, cache.TTL.REPORTS);
+                res.set('X-Cache', 'MISS');
+                return res.json({ success: true, data });
+            }
 
             case 'employee-card':
                 if (!empno) {
@@ -251,8 +267,8 @@ export const getAttendanceReports = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Attendance Reports Error:', error);
-        res.status(500).json({ success: false, message: 'Server error generating report' });
+        console.error('Attendance Reports Error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not generate report' });
     }
 };
 
@@ -322,6 +338,20 @@ export const importAttendance = async (req, res) => {
 
         await connection.commit();
 
+        // ── Invalidate cache + rebuild summaries for all affected months ──────
+        const affectedMonths = [...new Set(
+            records.map(r => {
+                const d = new Date(r.date);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }).filter(Boolean)
+        )];
+        affectedMonths.forEach(monthStr => {
+            cache.invalidate(`summary:${monthStr}`);
+            cache.invalidate(`report:monthly-summary:${monthStr}`);
+            summaryService.rebuildMonth(monthStr).catch(() => { });
+        });
+        cache.invalidate('dashboard:');
+
         // Audit Logging
         await logAudit({
             userId: user.username,
@@ -344,10 +374,41 @@ export const importAttendance = async (req, res) => {
         });
 
     } catch (error) {
-        await connection.rollback();
-        console.error('Import Attendance Error:', error);
-        res.status(500).json({ success: false, message: error.message || 'Server error importing attendance' });
+        try { await connection.rollback(); } catch { }
+        console.error('Import Attendance Error:', error.message);
+        res.status(400).json({ success: false, message: error.message || 'Error importing attendance' });
     } finally {
         connection.release();
     }
 };
+
+// ── ESS: My Attendance Summary ──
+export const myAttendanceSummary = async (req, res) => {
+    try {
+        const empno = req.user.username;
+        const now = new Date();
+        const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // Get pre-aggregated summary for this employee
+        const summary = await summaryService.getEmployeeSummary(monthStr, empno);
+
+        if (!summary) {
+            return res.json({ success: true, data: { lopDays: 0, presentPerc: 1.0 } });
+        }
+
+        const totalDays = (summary.present_days || 0) + (summary.absent_days || 0) + (summary.lop_days || 0) + (summary.weekoff_days || 0);
+        const presentPerc = totalDays > 0 ? ((summary.present_days || 0) + (summary.weekoff_days || 0)) / totalDays : 1.0;
+
+        res.json({
+            success: true,
+            data: {
+                lopDays: summary.lop_days || 0,
+                presentPerc: presentPerc
+            }
+        });
+    } catch (error) {
+        console.error('[Attendance] My Summary Error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

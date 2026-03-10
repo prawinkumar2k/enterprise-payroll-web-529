@@ -60,3 +60,9 @@ server/beta-metrics.json
 *.blockmap
 *.yml
 .electron-builder-cache/
+
+# ===============================
+# Kubernetes secrets (real values – use placeholder file in git)
+# ===============================
+k8s/secrets.local.yaml
+deploy/nginx/conf.d/*.local.conf

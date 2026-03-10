@@ -10,7 +10,8 @@ const SyncContext = createContext();
 export const SYNC_MODES = {
     ONLINE: 'ONLINE',
     OFFLINE: 'OFFLINE',
-    SYNCING: 'SYNCING'
+    SYNCING: 'SYNCING',
+    DUAL: 'DUAL',
 };
 
 function syncReducer(state, action) {
@@ -60,10 +61,37 @@ export function SyncProvider({ children }) {
             dispatch({ type: 'SET_FIELD', field: 'pendingCount', value: count });
 
         } catch (err) {
+<<<<<<< HEAD
             console.error('[SyncContext] Poll failed:', err.message);
             if (err.code === 'ERR_NETWORK') {
                 dispatch({ type: 'SET_FIELD', field: 'mode', value: SYNC_MODES.OFFLINE });
+=======
+            const status = err?.response?.status;
+            if (status === 401 || status === 403) return; // Not authenticated — skip silently
+            if (status >= 500) {
+                setMode(SYNC_MODES.OFFLINE); // Server error = treat as offline
+                return;
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
             }
+            if (err.code === 'ERR_NETWORK' || err.code === 'ECONNREFUSED') {
+                setMode(SYNC_MODES.OFFLINE);
+                return;
+            }
+        }
+
+        // Secondary: get precise DB mode from /api/system/sync-status
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const sysRes = await axios.get(getApiUrl('/system/sync-status'), {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 3000
+            });
+            if (sysRes.data?.mode) {
+                setMode(sysRes.data.mode); // DUAL, OFFLINE, MYSQL_ONLY etc
+            }
+        } catch {
+            // Non-fatal — sync status from /sync/status is sufficient fallback
         }
     }, [isSyncing]);
 

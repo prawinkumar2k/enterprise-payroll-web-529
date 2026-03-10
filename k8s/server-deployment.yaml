@@ -1,0 +1,97 @@
+# ── Server Deployment (Backend API + MySQL) ───────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payroll-server
+  namespace: payroll
+  labels:
+    app: payroll-server
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payroll-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: payroll-server
+        tier: backend
+    spec:
+      initContainers:
+        # Wait for MySQL to be ready before starting server
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z payroll-mysql-svc 3306; do echo "Waiting for MySQL..."; sleep 3; done; echo "MySQL is ready!"']
+      containers:
+        - name: server
+          image: localhost:5000/payroll-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5005
+              name: http
+          envFrom:
+            - secretRef:
+                name: payroll-secrets
+          volumeMounts:
+            - name: backups
+              mountPath: /app/backups
+            - name: logs
+              mountPath: /app/logs
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 4000m
+              memory: 4Gi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5005
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5005
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 5005
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: backups
+          persistentVolumeClaim:
+            claimName: backups-pvc
+        - name: logs
+          emptyDir:
+            sizeLimit: 500Mi
+---
+# ── Server Service ───────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: payroll-server-svc
+  namespace: payroll
+spec:
+  selector:
+    app: payroll-server
+  ports:
+    - name: http
+      port: 5005
+      targetPort: 5005
+  type: ClusterIP

@@ -8,20 +8,54 @@ import { createDiagnosticPackage } from '../services/diagnostics.service.js';
 import { verifyAuditIntegrity } from '../utils/auditLogger.js';
 
 import licenseService from '../services/license.service.js';
+import dualDB from '../database/dualDB.js';
+import syncWorker from '../sync/syncWorker.js';
 
 const router = express.Router();
 
+// --- DUAL DB SYNC HEALTH ---
+router.get('/sync-status', authenticate, async (req, res) => {
+    try {
+        const health = await dualDB.getSyncHealth();
+        res.json({ success: true, ...health });
+    } catch (error) {
+        res.json({ success: false, message: 'Sync status check failed' });
+    }
+});
+
+// --- MANUAL SYNC TRIGGER ---
+router.post('/sync-now', authenticate, async (req, res) => {
+    try {
+        const result = await syncWorker.runNow();
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // --- VERSION & STATUS ---
 router.get('/status', async (req, res) => {
-    const license = await licenseService.verifyLicense();
-    res.json({
-        success: true,
-        version: '1.0.0',
-        license: license.success ? `${license.type} Edition` : 'Trial Mode',
-        status: 'ACTIVE',
-        safeMode: process.env.SAFE_MODE === 'true',
-        mode: process.env.IS_DESKTOP === 'true' ? 'DESKTOP_ISOLATED' : 'CLOUD'
-    });
+    try {
+        const license = await licenseService.verifyLicense();
+        res.json({
+            success: true,
+            version: '1.0.0',
+            license: license.success ? `${license.type} Edition` : 'Trial Mode',
+            status: 'ACTIVE',
+            safeMode: process.env.SAFE_MODE === 'true',
+            mode: process.env.IS_DESKTOP === 'true' ? 'DESKTOP_ISOLATED' : 'CLOUD'
+        });
+    } catch (error) {
+        console.error('[System] Status check error:', error.message);
+        res.json({
+            success: true,
+            version: '1.0.0',
+            license: 'Trial Mode',
+            status: 'ACTIVE',
+            safeMode: process.env.SAFE_MODE === 'true',
+            mode: process.env.IS_DESKTOP === 'true' ? 'DESKTOP_ISOLATED' : 'CLOUD'
+        });
+    }
 });
 
 // --- COMMERCIAL LICENSE ---
@@ -38,7 +72,8 @@ router.get('/license/status', authenticate, async (req, res) => {
             limits
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'License check failed' });
+        console.error('[License] status error:', error.message);
+        res.json({ success: false, message: 'License check failed' });
     }
 });
 
@@ -48,7 +83,8 @@ router.get('/metrics', authenticate, async (req, res) => {
         const report = metricsService.calculateReadinessScore();
         res.json({ success: true, ...report });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to retrieve metrics' });
+        console.error('[Metrics] error:', error.message);
+        res.json({ success: false, message: 'Failed to retrieve metrics' });
     }
 });
 
@@ -59,7 +95,8 @@ router.get('/diagnostics/export', authenticate, async (req, res) => {
         const result = await createDiagnosticPackage(userDataPath);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Diagnostic export failed', error: error.message });
+        console.error('[Diagnostics] error:', error.message);
+        res.json({ success: false, message: 'Diagnostic export failed' });
     }
 });
 
@@ -69,7 +106,8 @@ router.get('/audit/verify', authenticate, async (req, res) => {
         const report = await verifyAuditIntegrity();
         res.json({ success: true, ...report });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Integrity check failed' });
+        console.error('[Audit] verify error:', error.message);
+        res.json({ success: false, message: 'Integrity check failed' });
     }
 });
 
@@ -83,7 +121,8 @@ router.post('/license/activate', authenticate, async (req, res) => {
             res.status(400).json(result);
         }
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Activation failed' });
+        console.error('[License] activate error:', error.message);
+        res.status(400).json({ success: false, message: 'Activation failed' });
     }
 });
 
@@ -93,7 +132,8 @@ router.post('/backup/manual', authenticate, async (req, res) => {
         const result = await backupService.performBackup();
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Backup failed' });
+        console.error('[Backup] error:', error.message);
+        res.json({ success: false, message: 'Backup failed' });
     }
 });
 
@@ -110,7 +150,8 @@ router.get('/backups', authenticate, async (req, res) => {
             .sort((a, b) => b.date - a.date);
         res.json(files);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to list backups' });
+        console.error('[Backups] list error:', error.message);
+        res.json([]);
     }
 });
 

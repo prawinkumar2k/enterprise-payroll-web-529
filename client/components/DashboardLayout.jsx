@@ -19,6 +19,7 @@ import {
   CloudOff,
   Database,
   AlertCircle,
+<<<<<<< HEAD
   LogOut,
   Building2,
   Shield,
@@ -37,6 +38,136 @@ function NavSidebar({
   activeRoute
 }) {
   return (
+=======
+  Sun,
+  Moon
+} from "lucide-react";
+
+
+export default function DashboardLayout({
+  children,
+  activeRoute = "dashboard",
+  userRole = "Admin",
+  disableContentWrapper = false
+}) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const effectiveRole = user.role || userRole;
+  const { isEnabled, settings, theme, toggleTheme } = useSettings();
+
+
+  const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync, error } = useSync();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
+
+  const [betaStatus, setBetaStatus] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/beta/status', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => setBetaStatus(data))
+      .catch(() => { });
+  }, []);
+
+  const handleExportDiagnostics = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/beta/diagnostics/export', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Diagnostic package exported to Desktop: ${data.fileName}`);
+      } else {
+        alert('Failed to export diagnostics: ' + data.message);
+      }
+    } catch (e) {
+      alert('Network error during diagnostic export.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // DYNAMIC MENU ITEMS GENERATOR
+  const adminMenuItems = [
+    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+    {
+      id: "files",
+      label: "FILES",
+      icon: FileText,
+      subItems: [
+        { id: "users", label: "User Details", href: "/users" },
+        { id: "audit-logs", label: "Log Details", href: "/audit-logs" }
+      ]
+    },
+    { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
+    { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
+    {
+      id: "attendance",
+      label: "ATTENDANCE",
+      icon: Calendar,
+      feature: 'enable_attendance',
+      subItems: [
+        { id: "attendance-daily", label: "Daily Attendance", href: "/attendance/daily" },
+        { id: "attendance-monthly", label: "Monthly Attendance", href: "/attendance/monthly" },
+        { id: "attendance-reports", label: "Attendance Reports", href: "/attendance/reports" }
+      ]
+    },
+    {
+      id: "reports",
+      label: "REPORTS",
+      icon: ScrollText,
+      subItems: [
+        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
+        { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
+        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
+        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
+        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
+        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
+        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
+      ]
+    },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "license", label: "Licensing", icon: Database, href: "/license" },
+    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" },
+    // ── Finance Module (Phase 2) ──
+    {
+      id: "finance",
+      label: "FINANCE",
+      icon: BarChart3,
+      subItems: [
+        { id: "income", label: "💵 Income", href: "/income" },
+        { id: "expense", label: "💸 Expenses", href: "/expense" },
+        { id: "finance-dashboard", label: "📊 Finance Dashboard", href: "/finance/dashboard" },
+      ]
+    },
+    { id: "salary-revisions", label: "Salary Revisions", icon: ScrollText, href: "/salary-revisions" },
+  ];
+
+  const employeeMenuItems = [
+    { id: "ess-dashboard", label: "ESS Home", icon: Home, href: "/employee/dashboard" },
+    { id: "my-payslips", label: "My Payslips", icon: Calculator, href: "/employee/dashboard" },
+    { id: "my-attendance", label: "My Attendance", icon: Calendar, href: "/employee/dashboard" },
+  ];
+
+  const menuItems = (effectiveRole?.toLowerCase() === 'employee') ? employeeMenuItems : adminMenuItems;
+
+
+
+
+  const NavContent = () => (
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
     <nav className="flex-1 px-4 py-6 overflow-y-auto">
       <ul className="space-y-2">
         {menuItems.map((item) => {
@@ -51,6 +182,7 @@ function NavSidebar({
               if (item.id === 'attendance') setAttendanceOpen(!attendanceOpen);
               if (item.id === 'finance') setFinanceOpen(!financeOpen);
             };
+
 
             return (
               <li key={item.id} className="space-y-1">
@@ -376,6 +508,7 @@ export default function DashboardLayout({
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-bold">Payroll Engine</h1>
+<<<<<<< HEAD
           </div>
           <div className="flex items-center gap-4">
             {/* Profile Dropdown */}
@@ -446,8 +579,59 @@ export default function DashboardLayout({
                   </div>
                 </div>
               )}
+=======
+
+            {/* DB Mode Badge — always visible in header */}
+            <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === SYNC_MODES.OFFLINE
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+              : mode === 'DUAL'
+                ? 'bg-violet-500/10 border-violet-500/30 text-violet-500'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+              }`}>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${mode === SYNC_MODES.OFFLINE ? 'bg-amber-500' : mode === 'DUAL' ? 'bg-violet-500' : 'bg-emerald-500'
+                }`} />
+              {mode === SYNC_MODES.OFFLINE ? 'SQLite Only' : mode === 'DUAL' ? 'Dual DB' : 'Online'}
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
             </div>
           </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center hover:bg-muted transition-all text-muted-foreground"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20"
+              >
+                <User className="w-4 h-4 text-primary" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl p-2 z-[100] animate-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-2 border-b border-border/50 mb-1">
+                    <p className="text-xs font-black text-foreground truncate uppercase tracking-tighter">{user.name || user.username || 'User'}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{effectiveRole}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      window.location.href = '#/login';
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors text-xs font-bold uppercase tracking-wider"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
         </header>
 
         <main className="flex-1 w-full bg-background overflow-y-auto overflow-x-hidden relative px-4 sm:px-8 py-8">

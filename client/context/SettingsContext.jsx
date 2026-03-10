@@ -6,6 +6,23 @@ const SettingsContext = createContext();
 export const SettingsProvider = ({ children }) => {
     const [settings, setSettings] = useState({});
     const [isLoading, setIsLoading] = useState(true);
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+    const toggleTheme = () => {
+        const next = theme === 'light' ? 'dark' : 'light';
+        setTheme(next);
+        localStorage.setItem('theme', next);
+    };
+
+    useEffect(() => {
+        const root = window.document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+    }, [theme]);
+
 
     const fetchSettings = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -89,10 +106,19 @@ export const SettingsProvider = ({ children }) => {
     const isEnabled = (key) => settings[key] === true || settings[key] === 'true';
 
     return (
-        <SettingsContext.Provider value={{ settings, updateGlobalSettings, isLoading, isEnabled, refreshSettings: fetchSettings }}>
+        <SettingsContext.Provider value={{
+            settings,
+            updateGlobalSettings,
+            isLoading,
+            isEnabled,
+            refreshSettings: fetchSettings,
+            theme,
+            toggleTheme
+        }}>
             {children}
         </SettingsContext.Provider>
     );
+
 };
 
 // eslint-disable-next-line react-refresh/only-export-components

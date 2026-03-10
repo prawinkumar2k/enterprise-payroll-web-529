@@ -1,0 +1,97 @@
+# ── Traefik IngressRoute (K3s built-in ingress controller) ─────
+# Works with both IP address and domain name
+# ───────────────────────────────────────────────────────────────
+
+# ── HTTPS IngressRoute (main traffic) ─────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: payroll-ingress-secure
+  namespace: payroll
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    # API → backend server
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: payroll-server-svc
+          port: 5005
+      middlewares:
+        - name: api-ratelimit
+        - name: security-headers
+    # Frontend → client
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: payroll-client-svc
+          port: 8080
+      middlewares:
+        - name: security-headers
+  tls: {}   # Use default Traefik TLS (self-signed initially, then Let's Encrypt with domain)
+
+---
+# ── HTTP IngressRoute (redirect to HTTPS or serve directly) ──
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: payroll-ingress-http
+  namespace: payroll
+spec:
+  entryPoints:
+    - web
+  routes:
+    # API → backend (also on HTTP for initial testing without SSL)
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: payroll-server-svc
+          port: 5005
+    # Frontend → client
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: payroll-client-svc
+          port: 8080
+
+---
+# ── Rate Limiting Middleware ──────────────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: api-ratelimit
+  namespace: payroll
+spec:
+  rateLimit:
+    average: 100        # 100 requests/sec average
+    burst: 200          # allow bursts up to 200
+    period: 1s
+
+---
+# ── Security Headers Middleware ───────────────────────────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: payroll
+spec:
+  headers:
+    frameDeny: true
+    contentTypeNosniff: true
+    browserXssFilter: true
+    referrerPolicy: "strict-origin-when-cross-origin"
+    customResponseHeaders:
+      X-Powered-By: ""
+
+---
+# ── HTTPS Redirect Middleware (enable after SSL setup) ────────
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: payroll
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

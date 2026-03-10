@@ -13,7 +13,12 @@ const envPath = path.join(__dirname, '../.env');
 const envConfig = dotenv.parse(fs.readFileSync(envPath));
 for (const k in envConfig) { process.env[k] = envConfig[k]; }
 
-const SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is not set. Security audit cannot run.');
+    process.exit(1);
+}
+
 const BASE_URL = 'http://localhost:5001/api';
 
 async function runLockdownAudit() {

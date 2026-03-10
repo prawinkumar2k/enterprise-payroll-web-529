@@ -6,7 +6,11 @@ import jwt from 'jsonwebtoken';
 import { logAction } from '../middleware/log.middleware.js';
 import { randomBytes } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not set. Security fallback disabled.');
+}
+
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
@@ -74,11 +78,53 @@ export const login = async (req, res) => {
             'SELECT * FROM userdetails WHERE UserID = ?',
             [userId]
         );
+<<<<<<< HEAD
         const user = rows ? rows[0] : null;
 
         if (!user) {
             console.warn(`[Auth] User not found: ${userId}`);
             await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']);
+=======
+
+        let user = rows ? rows[0] : null;
+
+        // ── ESS FALLBACK: Check empdet if not in userdetails ──
+        if (!user) {
+            console.log(`[Auth] User ${userId} not in userdetails. Checking empdet...`);
+            const [empRows] = await dbManager.query(
+                'SELECT EMPNO, SNAME, EMAIL FROM empdet WHERE EMPNO = ? AND (CheckStatus IN ("Active", "True") OR CheckStatus IS NULL)',
+                [userId]
+            );
+
+            if (empRows && empRows[0]) {
+                const emp = empRows[0];
+                console.log(`[Auth] Employee match found for ${userId}. Verifying initial credential...`);
+
+                // Initial ESS Login: Password = EMPNO
+                if (password === emp.EMPNO) {
+                    console.log(`[Auth] First-time ESS login for ${emp.EMPNO}. Creating user account...`);
+                    // Salt & Hash the password (EMPNO) for the new userdetails record
+                    const salt = await bcrypt.genSalt(10);
+                    const hashedPass = await bcrypt.hash(password, salt);
+
+                    await dbManager.execute(
+                        'INSERT INTO userdetails (UserID, Password, UserName, Role, EMAIL) VALUES (?, ?, ?, ?, ?)',
+                        [emp.EMPNO, hashedPass, emp.SNAME, 'employee', emp.EMAIL]
+                    );
+
+                    // Re-fetch the newly created user
+                    const [newUserRows] = await dbManager.query('SELECT * FROM userdetails WHERE UserID = ?', [emp.EMPNO]);
+                    user = newUserRows[0];
+                }
+            }
+        }
+
+        if (!user) {
+            console.warn(`[Auth] User not found: ${userId}`);
+
+            // Non-fatal: log failure, don't let it block the 401 response
+            try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']); } catch { }
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
             return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
         }
 
@@ -102,12 +148,18 @@ export const login = async (req, res) => {
         console.log(`[Auth] Password match: ${isMatch}`);
 
         if (!isMatch) {
+<<<<<<< HEAD
             await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']);
+=======
+            // Non-fatal: log failure attempt
+            try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']); } catch { }
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
             return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
         }
 
         // Generate Tokens
         console.log('[Auth] Generating tokens...');
+<<<<<<< HEAD
         const accessToken = generateAccessToken(user, company_code);
         const refreshToken = await generateRefreshToken(user.id, device_id, company_code);
 
@@ -120,16 +172,41 @@ export const login = async (req, res) => {
             description: 'User logged in successfully',
             ip: ip
         });
+=======
+        const accessToken = generateAccessToken(user);
 
-        console.log('[Auth] Login successful. Setting cookie...');
+        // Non-fatal: generate + store refresh token (gracefully degrade if DB write fails)
+        let refreshToken = null;
+        try {
+            refreshToken = await generateRefreshToken(user.id || user.ID, device_id);
+        } catch (rtErr) {
+            console.warn('[Auth] Refresh token storage failed (non-fatal):', rtErr.message);
+        }
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
-        // Set refresh token in HttpOnly cookie
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
-            maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-        });
+        // Non-fatal: audit log + attempt log
+        try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'SUCCESS']); } catch { }
+        try {
+            await logAction({
+                userId: user.UserID,
+                module: 'AUTH',
+                actionType: 'LOGIN',
+                description: 'User logged in successfully',
+                ip: ip
+            });
+        } catch { }
+
+        console.log('[Auth] Login successful.');
+
+        // Set refresh token cookie only if successfully generated
+        if (refreshToken) {
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+            });
+        }
 
         res.json({
             success: true,
@@ -263,17 +340,5 @@ export const getCurrentUser = async (req, res) => {
     }
 };
 
-/**
- * Fix Admin User (Force Reset)
- */
-export const fixAdmin = async (req, res) => {
-    try {
-        console.log('[Auth] Forcing Admin Reset...');
-        await dbManager.execute('DELETE FROM userdetails WHERE UserID = ?', ['admin']);
-        await dbManager.execute('INSERT INTO userdetails (UserID, Password, UserName, Role) VALUES (?, ?, ?, ?)', ['admin', 'admin123', 'Administrator', 'admin']);
-        res.json({ success: true, message: 'Admin reset to default (admin/admin123)' });
-    } catch (error) {
-        console.error('[Auth] Fix Admin Error:', error);
-        res.status(500).json({ success: false, message: 'Failed to reset admin', error: error.message });
-    }
-};
+// fixAdmin removed for security compliance
+

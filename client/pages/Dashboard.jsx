@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, lazy, Suspense } from "react";
+=======
+import React, { useState } from "react";
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Users,
@@ -12,6 +16,8 @@ import {
   Landmark
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiGet } from "../lib/apiClient";
+import { useQuery } from "@tanstack/react-query";
 
 const DashboardCharts = lazy(() => import("../components/DashboardCharts"));
 
@@ -43,6 +49,7 @@ function StatCard({ icon, label, value, subValue, type = "default" }) {
 
 export default function Dashboard() {
   const now = new Date();
+<<<<<<< HEAD
   const [month, setMonth] = useState(() => String(now.getMonth() + 1).padStart(2, "0"));
   const [year, setYear] = useState(() => String(now.getFullYear()));
   const [data, setData] = useState(null);
@@ -69,6 +76,20 @@ export default function Dashboard() {
     fetchStats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, year]);
+=======
+  const [month, setMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  // useQuery with apiClient — auto-401 redirect, 60s cache
+  const { data: queryData, isLoading } = useQuery({
+    queryKey: ['dashboard-stats', month, year],
+    queryFn: () => apiGet(`/api/dashboard/stats?month=${month}&year=${year}`).then(r => r.data),
+    staleTime: 60 * 1000,
+    retry: 1,
+    onError: () => toast.error('Failed to load dashboard data'),
+  });
+
+  const data = queryData;
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
   if (!data && isLoading) {
     return (

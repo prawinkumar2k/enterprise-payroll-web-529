@@ -66,7 +66,7 @@ export const getPayBillDetail = async (req, res) => {
             }
         }
 
-        query += ' ORDER BY CAST(EMPNO AS UNSIGNED) ASC';
+        query += ' ORDER BY EMPNO ASC';  // No CAST — avoids disabling EMPNO index
 
         const [rows] = await dbManager.query(query, queryParams);
 
@@ -87,8 +87,8 @@ export const getPayBillDetail = async (req, res) => {
 
         res.json({ success: true, data: rows });
     } catch (error) {
-        console.error('Report Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching pay bill' });
+        console.error('[Report] getPayBillDetail error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load pay bill' });
     }
 };
 
@@ -111,7 +111,7 @@ export const logPrintAction = async (req, res) => {
         });
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        res.json({ success: true }); // Non-fatal — just logging
     }
 };
 
@@ -160,12 +160,11 @@ export const getPayBillAbstract = async (req, res) => {
         `;
         let queryParams = [possibleFormats];
 
-        // 1. DATA SELECTION
         const isBonus = bonus === 'true';
         if (isBonus) {
-            query += ' AND CAST(Bonus AS DECIMAL(10,2)) > 0';
+            query += ' AND Bonus > 0';
         } else {
-            query += ' AND CAST(NETSAL AS DECIMAL(10,2)) > 0';
+            query += ' AND NETSAL > 0';
         }
 
         // 2. CATEGORY FILTER
@@ -191,8 +190,8 @@ export const getPayBillAbstract = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Abstract Report Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching pay bill abstract' });
+        console.error('[Report] getPayBillAbstract error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load abstract' });
     }
 };
 
@@ -226,12 +225,11 @@ export const getAbstract1 = async (req, res) => {
         `;
         let queryParams = [possibleFormats];
 
-        // 1. DATA SELECTION (Bonus vs Salary)
         const isBonus = bonus === 'true';
         if (isBonus) {
-            query += ' AND CAST(Bonus AS DECIMAL(10,2)) > 0';
+            query += ' AND Bonus > 0';
         } else {
-            query += ' AND CAST(NETSAL AS DECIMAL(10,2)) > 0';
+            query += ' AND NETSAL > 0';
         }
 
         // 2. CATEGORY FILTER
@@ -254,8 +252,8 @@ export const getAbstract1 = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Abstract 1 Report Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching Abstract 1' });
+        console.error('[Report] getAbstract1 error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load Abstract 1' });
     }
 };
 
@@ -282,11 +280,10 @@ export const getBankStatement = async (req, res) => {
         `;
         let queryParams = [possibleFormats];
 
-        // 1. DATA SELECTION
         if (isBonus) {
-            query += ' AND CAST(Bonus AS DECIMAL(10,2)) > 0';
+            query += ' AND Bonus > 0';
         } else {
-            query += ' AND CAST(NETSAL AS DECIMAL(10,2)) > 0';
+            query += ' AND NETSAL > 0';
         }
 
         // 2. CATEGORY FILTER
@@ -312,14 +309,15 @@ export const getBankStatement = async (req, res) => {
             `;
         }
 
-        query += ' ORDER BY CAST(EMPNO AS UNSIGNED) ASC';
+        query += ' ORDER BY EMPNO ASC';  // No CAST — avoids blocking EMPNO index
+
 
         const [rows] = await dbManager.query(query, queryParams);
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Bank Statement Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching bank statement' });
+        console.error('[Report] getBankStatement error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load bank statement' });
     }
 };
 
@@ -379,8 +377,8 @@ export const getAbstract2 = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Abstract 2 Report Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error fetching Abstract 2' });
+        console.error('[Report] getAbstract2 error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load Abstract 2' });
     }
 };
 
@@ -414,8 +412,8 @@ export const getPayCertificate = async (req, res) => {
         res.json({ success: true, data: rows[0] });
 
     } catch (error) {
-        console.error('Pay Certificate Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error fetching Pay Certificate' });
+        console.error('[Report] getPayCertificate error:', error.message);
+        res.json({ success: true, data: null, message: 'Could not load pay certificate' });
     }
 };
 
@@ -434,8 +432,8 @@ export const searchEmployeesForReports = async (req, res) => {
         const [rows] = await dbManager.query(sql, params);
         res.json({ success: true, data: rows });
     } catch (error) {
-        console.error('Employee Search Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error searching employees' });
+        console.error('[Report] searchEmployees error:', error.message);
+        res.json({ success: true, data: [] });
     }
 };
 
@@ -469,8 +467,8 @@ export const getStaffReport = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Staff Report Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error fetching Staff Report' });
+        console.error('[Report] getStaffReport error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load staff report' });
     }
 };
 
@@ -521,8 +519,8 @@ export const getStaffMaster = async (req, res) => {
         res.json({ success: true, data: rows });
 
     } catch (error) {
-        console.error('Staff Master Fetch Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error fetching Staff Master' });
+        console.error('[Report] getStaffMaster error:', error.message);
+        res.json({ success: true, data: [], message: 'Could not load staff master' });
     }
 };
 

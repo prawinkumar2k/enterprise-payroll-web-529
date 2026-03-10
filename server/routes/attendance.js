@@ -4,15 +4,20 @@ import {
     markDailyAttendance,
     getMonthlyAttendance,
     getAttendanceReports,
-    importAttendance
+    importAttendance,
+    myAttendanceSummary
 } from '../controllers/attendance.controller.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Attendance management is restricted to Admin/HR
+// Publicly auth'd for personal ESS view
 router.use(authenticate);
+router.get('/my-summary', myAttendanceSummary);
+
+// Administrative restricted paths
 router.use(authorize('admin', 'hr_officer'));
+
 
 // Daily Attendance
 router.get('/daily', getDailyAttendance);

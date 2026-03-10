@@ -22,6 +22,11 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+<<<<<<< HEAD
+=======
+    "electron-updater": "^6.7.3",
+    "exceljs": "^4.4.0",
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
@@ -30,7 +35,6 @@
     "pino": "^8.17.2",
     "pino-http": "^9.0.0",
     "pino-pretty": "^10.3.1",
-    "sql.js": "^1.14.0",
     "uuid": "^11.1.0",
     "zod": "^3.22.4"
   },

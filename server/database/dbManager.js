@@ -1,20 +1,21 @@
 
+<<<<<<< HEAD
 import mysqlPool from '../db.js';
 import sqliteManager from './sqliteManager.js';
 import modeManager, { MODES } from './modeManager.js';
 import { getTenantPool } from './tenantDbManager.js';
 
+=======
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 /**
- * DB Manager
- * Unified interface for MySQL (Online) and SQLite (Offline)
+ * dbManager — now a thin re-export of dualDB
+ *
+ * All existing controllers that import dbManager continue to work unchanged.
+ * The actual implementation now lives in dualDB.js.
  */
-class DBManager {
-    constructor() {
-        this.mysql = mysqlPool;
-        this.sqlite = sqliteManager;
-        this.activeTransactions = 0;
-    }
+import dualDB from './dualDB.js';
 
+<<<<<<< HEAD
     async init() {
         console.log('[DBManager] Initializing Local Persistence Engine...');
         // Prefer MySQL when available (web/online deployments). Fall back to SQLite for offline/local desktop.
@@ -136,3 +137,6 @@ class DBManager {
 
 const dbManager = new DBManager();
 export default dbManager;
+=======
+export default dualDB;
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee

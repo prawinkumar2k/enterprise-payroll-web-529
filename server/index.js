@@ -7,6 +7,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
+// ── Load env FIRST before any other import that reads process.env ──
+const __filenameEarly = fileURLToPath(import.meta.url);
+const __dirnameEarly = path.dirname(__filenameEarly);
+dotenv.config({ path: path.join(__dirnameEarly, '.env') });
+
+// ── Validate env immediately after loading ──
+import { validateEnv } from './utils/envValidator.js';
+validateEnv();
+
 import { httpLogger, correlationMiddleware } from './logger/httpLogger.js';
 import dbManager from './database/dbManager.js';
 import { requestLogger, errorHandler } from './middleware/commonMiddleware.js';
@@ -31,16 +40,22 @@ import syncRoutes from './routes/sync.routes.js';
 import systemRoutes from './routes/system.routes.js';
 import healthRoutes from './routes/health.routes.js';
 import tenantRoutes from './routes/tenant.routes.js';
-import modeManager from './database/modeManager.js';
+import incomeRoutes from './routes/income.routes.js';
+import expenseRoutes from './routes/expense.routes.js';
+import financeRoutes from './routes/finance.routes.js';
+import salaryRevisionRoutes from './routes/salary_revision.routes.js';
 import { notFound } from './middleware/commonMiddleware.js';
 import metricsService from './services/metrics.service.js';
 import backupService from './services/backup.service.js';
 import { verifyAuditIntegrity } from './utils/auditLogger.js';
-import { verifyDataIntegrity } from './services/diagnostics.service.js';
+// verifyDataIntegrity removed — was SQLite-only (PRAGMA integrity_check)
+import syncWorker from './sync/syncWorker.js';
+import summaryService from './services/summary.service.js';
+import cache from './services/cache.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '.env') });
+// dotenv already loaded at startup — no need to reload here
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -78,11 +93,18 @@ app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
 // --- HEALTH & SYSTEM ---
 app.get('/api/health', (req, res) => {
+    const dbState = dbManager.getState();
+    const mode = dbState.mysqlAvailable && dbState.sqliteAvailable
+        ? 'DUAL'
+        : dbState.mysqlAvailable ? 'MYSQL_ONLY'
+            : dbState.sqliteAvailable ? 'SQLITE_ONLY'
+                : 'OFFLINE';
     res.json({
         success: true,
         status: 'healthy',
         version: '1.0.0',
-        mode: modeManager.getMode(),
+        mode,
+        cache: cache.stats(),
         timestamp: new Date().toISOString()
     });
 });
@@ -106,6 +128,13 @@ app.use('/api/health', healthRoutes); // Registered healthRoutes at /api/health
 app.use('/api/tenant', tenantRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/beta', systemRoutes); // Mount system status under beta too for frontend compatibility
+
+// ── New Modules (Phase 2) ──
+app.use('/api/income', readLimiter, incomeRoutes);
+app.use('/api/expense', readLimiter, expenseRoutes);
+app.use('/api/finance', readLimiter, financeRoutes);
+app.use('/api/salary-revisions', readLimiter, salaryRevisionRoutes);
+
 
 // --- FRONTEND STATIC SERVING (Unconditional) ---
 // Try env var from Electron main first, else relative path
@@ -175,16 +204,18 @@ app.use(errorHandler);
 // --- ENTERPRISE STARTUP ENGINE ---
 app.listen(PORT, HOST, async () => {
     try {
-        await modeManager.init();
-        metricsService.updateSystemMetrics(process.env.SAFE_MODE === 'true');
+        // Single consolidated init: dualDB handles MySQL probe, SQLite schema, and retry worker
         await dbManager.init();
 
-        // 1. Data Integrity Check
-        const integrity = await verifyDataIntegrity(dbManager.getRawInstance());
-        if (!integrity.valid) {
-            console.error(`[Integrity] Critical failure: ${integrity.reason}`);
-        }
+        // Start background sync consistency checker
+        syncWorker.start();
 
+        metricsService.updateSystemMetrics(process.env.SAFE_MODE === 'true');
+
+        // 1. Data Integrity Check (MySQL handles its own integrity)
+        console.log('[Startup] MySQL-only mode — skipping SQLite integrity check.');
+
+<<<<<<< HEAD
         // 2. Audit Log Verification
         const auditVerification = await verifyAuditIntegrity();
         if (!auditVerification.success) {
@@ -192,10 +223,28 @@ app.listen(PORT, HOST, async () => {
         } else {
             console.log(`[Security] Audit logs verified (${auditVerification.count} records).`);
         }
+=======
+        // 2. Audit Chain Verification
+        try {
+            const auditVerification = await verifyAuditIntegrity();
+            if (!auditVerification.success) {
+                console.error(`[Security] Audit log tampering detected: ${auditVerification.error}`);
+            } else {
+                console.log(`[Security] Audit chain verified (${auditVerification.count} records).`);
+            }
+        } catch (e) { /* Non-fatal */ }
+>>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
-        // 3. Automated Backup (Daily at startup + every 24h)
-        await backupService.performBackup();
-        setInterval(() => backupService.performBackup(), 86400000);
+        // 3. Automated Backup
+        try {
+            await backupService.performBackup();
+            setInterval(() => backupService.performBackup(), 86400000);
+        } catch (e) { /* Non-fatal */ }
+
+        // 4. Create summary table if not exists
+        try {
+            await summaryService.ensureSummaryTable();
+        } catch (e) { /* Non-fatal */ }
 
         // 4. Ensure company_code column exists in refresh_tokens (billing_db)
         try {
@@ -222,7 +271,8 @@ app.listen(PORT, HOST, async () => {
         }
 
     } catch (err) {
-        console.error('[Startup] Initialization failed:', err);
+        console.error('[Startup] Initialization error:', err.message);
     }
     console.log(`✓ [Production] Server listening on http://${HOST}:${PORT}`);
 });
+
