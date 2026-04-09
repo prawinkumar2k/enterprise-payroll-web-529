@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { getApiUrl } from '../lib/api';
+import { getApiUrl } from '../lib/apiClient';
 import syncService from '../lib/SyncService';
 
 const SyncContext = createContext();
@@ -32,23 +31,33 @@ export function SyncProvider({ children }) {
     });
     const { mode, lastSync, isSyncing, pendingCount, error, progress } = state;
 
+    // ── Refs track latest state without causing effect re-runs ────────────────
     const pollTimer = useRef(null);
+    const isSyncingRef = useRef(isSyncing);
+    const modeRef = useRef(mode);
+    const isDestroyedRef = useRef(false);
 
+    // Keep refs in sync with state (these effects do NOT trigger the poll loop)
+    useEffect(() => { isSyncingRef.current = isSyncing; }, [isSyncing]);
+    useEffect(() => { modeRef.current = mode; }, [mode]);
+
+    // ── Fetch sync status from the server ─────────────────────────────────────
     const fetchStatus = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!token) return; // Not logged in — skip silently
 
             const response = await axios.get(getApiUrl('/sync/status'), {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 5000,
             });
 
             if (response.data.success) {
-                // Backend is the authority
                 const backendMode = response.data.mode || SYNC_MODES.ONLINE;
-                if (backendMode === SYNC_MODES.SYNCING && !isSyncing) {
+
+                if (backendMode === SYNC_MODES.SYNCING && !isSyncingRef.current) {
                     dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: true });
-                } else if (backendMode !== SYNC_MODES.SYNCING && isSyncing && !syncService.isSyncing) {
+                } else if (backendMode !== SYNC_MODES.SYNCING && isSyncingRef.current && !syncService.isSyncing) {
                     dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: false });
                 }
 
@@ -56,25 +65,19 @@ export function SyncProvider({ children }) {
                 dispatch({ type: 'SET_FIELD', field: 'lastSync', value: response.data.lastSyncTime });
             }
 
-            // Check local pending count
+            // Check local pending queue count
             const count = await syncService.getPendingCount();
             dispatch({ type: 'SET_FIELD', field: 'pendingCount', value: count });
 
         } catch (err) {
-<<<<<<< HEAD
-            console.error('[SyncContext] Poll failed:', err.message);
-            if (err.code === 'ERR_NETWORK') {
-                dispatch({ type: 'SET_FIELD', field: 'mode', value: SYNC_MODES.OFFLINE });
-=======
             const status = err?.response?.status;
-            if (status === 401 || status === 403) return; // Not authenticated — skip silently
-            if (status >= 500) {
-                setMode(SYNC_MODES.OFFLINE); // Server error = treat as offline
-                return;
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-            }
-            if (err.code === 'ERR_NETWORK' || err.code === 'ECONNREFUSED') {
-                setMode(SYNC_MODES.OFFLINE);
+
+            // Silently skip auth errors (user is not logged in yet)
+            if (status === 401 || status === 403) return;
+
+            // Mark OFFLINE for network-level errors
+            if (!status || err.code === 'ERR_NETWORK' || err.code === 'ECONNREFUSED' || err.code === 'ECONNABORTED') {
+                dispatch({ type: 'SET_FIELD', field: 'mode', value: SYNC_MODES.OFFLINE });
                 return;
             }
         }
@@ -88,30 +91,44 @@ export function SyncProvider({ children }) {
                 timeout: 3000
             });
             if (sysRes.data?.mode) {
-                setMode(sysRes.data.mode); // DUAL, OFFLINE, MYSQL_ONLY etc
+                dispatch({ type: 'SET_FIELD', field: 'mode', value: sysRes.data.mode });
             }
         } catch {
-            // Non-fatal — sync status from /sync/status is sufficient fallback
+            // Non-fatal — secondary endpoint is optional
         }
-    }, [isSyncing]);
+    }, []); // Stable: uses refs only, no state deps
 
-    // Smart Polling Strategy
+    // ── Self-contained polling loop ───────────────────────────────────────────
+    // CRITICAL: This effect has NO state dependencies ([] only).
+    // It runs ONCE on mount and cleans up on unmount.
+    // State changes (mode, isSyncing) do NOT restart this loop —
+    // they are read via refs at schedule time so the loop stays stable.
     useEffect(() => {
+        isDestroyedRef.current = false;
+
         const getPollInterval = () => {
-            if (isSyncing) return 3000;   // 3s during sync
-            if (mode === SYNC_MODES.OFFLINE) return 10000; // 10s if offline
-            return 30000; // 30s default online
+            if (isSyncingRef.current) return 3000;          // 3s while syncing
+            if (modeRef.current === SYNC_MODES.OFFLINE) return 30000; // 30s if offline
+            return 60000;                                    // 60s normal online
         };
 
         const runPoll = async () => {
+            if (isDestroyedRef.current) return; // Component unmounted — bail out
             await fetchStatus();
+            if (isDestroyedRef.current) return; // Check again after async work
             pollTimer.current = setTimeout(runPoll, getPollInterval());
         };
 
+        // Start the polling loop
         runPoll();
-        return () => clearTimeout(pollTimer.current);
-    }, [fetchStatus, mode, isSyncing]);
 
+        return () => {
+            isDestroyedRef.current = true;
+            clearTimeout(pollTimer.current);
+        };
+    }, [fetchStatus]); // fetchStatus is stable (useCallback with [])
+
+    // ── Manual Sync Trigger ───────────────────────────────────────────────────
     const triggerManualSync = async () => {
         if (isSyncing) return;
 
@@ -131,7 +148,6 @@ export function SyncProvider({ children }) {
             dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: false });
             dispatch({ type: 'SET_FIELD', field: 'progress', value: { stage: null, current: 0, total: 0, percent: 0 } });
         } finally {
-            // isSyncing will be updated by poll or finalized here if poll hasn't run
             setTimeout(() => dispatch({ type: 'SET_FIELD', field: 'isSyncing', value: syncService.isSyncing }), 500);
         }
     };

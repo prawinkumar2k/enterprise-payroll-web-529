@@ -7,27 +7,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// ── Load env FIRST before any other import that reads process.env ──
 const __filenameEarly = fileURLToPath(import.meta.url);
 const __dirnameEarly = path.dirname(__filenameEarly);
-dotenv.config({ path: path.join(__dirnameEarly, '.env') });
+dotenv.config({ path: path.join(__dirnameEarly, '.env'), override: true });
 
-// ── Validate env immediately after loading ──
 import { validateEnv } from './utils/envValidator.js';
 validateEnv();
 
 import { httpLogger, correlationMiddleware } from './logger/httpLogger.js';
 import dbManager from './database/dbManager.js';
-import { requestLogger, errorHandler } from './middleware/commonMiddleware.js';
-import { authLimiter, syncLimiter, readLimiter } from './middleware/rateLimiters.js';
-import { provisionCompanyDb, companyDbExists } from './database/provisionCompanyDb.js';
-import mysqlPool from './db.js';
+import { errorHandler, notFound } from './middleware/commonMiddleware.js';
+import { authLimiter, readLimiter } from './middleware/rateLimiters.js';
+import summaryService from './services/summary.service.js';
 
 import authRoutes from './routes/auth.js';
-import companiesRoutes from './routes/companies.js';
-import superAdminRoutes from './routes/superAdmin.routes.js';
-import employeeRoutes from './routes/employees.js';
-import payrollRoutes from './routes/payroll.js';
+import adminEmployeesRoutes from './routes/admin.employees.js';
 import userRoutes from './routes/users.js';
 import logRoutes from './routes/log.routes.js';
 import salaryRoutes from './routes/salary.routes.js';
@@ -36,42 +30,25 @@ import settingsRoutes from './routes/settings.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import attendanceRoutes from './routes/attendance.js';
 import incomeExpenseRoutes from './routes/incomeExpense.routes.js';
-import syncRoutes from './routes/sync.routes.js';
-import systemRoutes from './routes/system.routes.js';
 import healthRoutes from './routes/health.routes.js';
-import tenantRoutes from './routes/tenant.routes.js';
 import incomeRoutes from './routes/income.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import financeRoutes from './routes/finance.routes.js';
 import salaryRevisionRoutes from './routes/salary_revision.routes.js';
-import { notFound } from './middleware/commonMiddleware.js';
-import metricsService from './services/metrics.service.js';
-import backupService from './services/backup.service.js';
+import selfServiceRoutes from './routes/self.employees.js';
+import biometricRoutes from './routes/biometric.routes.js';
+import leaveRoutes from './routes/leave.js';
+import shiftRoutes from './routes/shift.js';
+import syncRoutes from './routes/sync.routes.js';
+import systemRoutes from './routes/system.routes.js';
 import { verifyAuditIntegrity } from './utils/auditLogger.js';
-// verifyDataIntegrity removed — was SQLite-only (PRAGMA integrity_check)
-import syncWorker from './sync/syncWorker.js';
-import summaryService from './services/summary.service.js';
-import cache from './services/cache.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// dotenv already loaded at startup — no need to reload here
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5005;
 const HOST = process.env.HOST || '127.0.0.1';
-
-// --- PRODUCTION CRASH LOGGING ---
-const serverCrashLog = path.join(process.env.DATA_PATH || process.cwd(), 'server-crash.log');
-process.on('uncaughtException', (err) => {
-    const report = { timestamp: new Date().toISOString(), type: 'UNCAUGHT_EXCEPTION', error: err.stack || err };
-    try { fs.appendFileSync(serverCrashLog, JSON.stringify(report) + '\n'); } catch (e) { }
-    process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-    const report = { timestamp: new Date().toISOString(), type: 'UNHANDLED_REJECTION', error: reason.stack || reason };
-    try { fs.appendFileSync(serverCrashLog, JSON.stringify(report) + '\n'); } catch (e) { }
-});
 
 app.set('trust proxy', 1);
 app.use(correlationMiddleware);
@@ -79,7 +56,6 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or file://)
         if (!origin || origin === 'null') return callback(null, true);
         const allowed = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
         if (allowed.length === 0 || allowed.includes(origin)) return callback(null, true);
@@ -91,30 +67,11 @@ app.use(httpLogger);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
-// --- HEALTH & SYSTEM ---
-app.get('/api/health', (req, res) => {
-    const dbState = dbManager.getState();
-    const mode = dbState.mysqlAvailable && dbState.sqliteAvailable
-        ? 'DUAL'
-        : dbState.mysqlAvailable ? 'MYSQL_ONLY'
-            : dbState.sqliteAvailable ? 'SQLITE_ONLY'
-                : 'OFFLINE';
-    res.json({
-        success: true,
-        status: 'healthy',
-        version: '1.0.0',
-        mode,
-        cache: cache.stats(),
-        timestamp: new Date().toISOString()
-    });
-});
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- ROUTE REGISTRATION ---
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/companies', readLimiter, companiesRoutes);
-app.use('/api/superadmin', readLimiter, superAdminRoutes);
-app.use('/api/sync', syncLimiter, syncRoutes);
-app.use('/api/employees', readLimiter, employeeRoutes);
+app.use('/api/employee', selfServiceRoutes);
+app.use('/api/employees', readLimiter, adminEmployeesRoutes);
 app.use('/api/settings', readLimiter, settingsRoutes);
 app.use('/api/reports', readLimiter, reportRoutes);
 app.use('/api/dashboard', readLimiter, dashboardRoutes);
@@ -123,156 +80,62 @@ app.use('/api/income-expense', incomeExpenseRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
-app.use('/api/health', healthRoutes); // Registered healthRoutes at /api/health
-
-app.use('/api/tenant', tenantRoutes);
-app.use('/api/system', systemRoutes);
-app.use('/api/beta', systemRoutes); // Mount system status under beta too for frontend compatibility
-
-// ── New Modules (Phase 2) ──
+app.use('/api/leave', leaveRoutes);
+app.use('/api/shift', shiftRoutes);
+app.use('/api/health', healthRoutes);
 app.use('/api/income', readLimiter, incomeRoutes);
 app.use('/api/expense', readLimiter, expenseRoutes);
 app.use('/api/finance', readLimiter, financeRoutes);
 app.use('/api/salary-revisions', readLimiter, salaryRevisionRoutes);
+app.use('/api/biometric', biometricRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/beta', systemRoutes);
 
-
-// --- FRONTEND STATIC SERVING (Unconditional) ---
-// Try env var from Electron main first, else relative path
-const frontendPath = process.env.FRONTEND_PATH
-    ? path.resolve(process.env.FRONTEND_PATH)
-    : path.resolve(__dirname, '../client/dist');
+const frontendPath = path.resolve(__dirname, '../client/dist');
 const indexPath = path.join(frontendPath, 'index.html');
 
-console.log('[DEBUG] Frontend Path:', frontendPath);
-console.log('[DEBUG] Checking if frontend exists...');
-
 if (fs.existsSync(frontendPath)) {
-    console.log('[DEBUG] Frontend found. Serving static files.');
-
-    // Force serve index.html at root
-    app.get('/', (req, res) => {
-        if (fs.existsSync(indexPath)) {
-            res.sendFile(indexPath);
-        } else {
-            console.error('[ERROR] Directory exists but index.html missing!');
-            res.status(500).send(`
-                <h1>Error: Frontend Index Missing</h1>
-                <p>Build directory exists at: <code>${frontendPath}</code></p>
-                <p>But <code>index.html</code> was not found.</p>
-                <hr>
-                <small>Enterprise Payroll System - Server v1.0.0</small>
-            `);
+    app.use(express.static(frontendPath));
+    app.get('*', (req, res) => {
+        if (req.path.startsWith('/api')) {
+            return res.status(404).json({ success: false, message: 'API not found' });
         }
-    });
-
-    // Serve static assets
-    app.use(express.static(frontendPath, {
-        maxAge: '1d',
-        setHeaders: (res, path) => {
-            if (path.endsWith('.html')) {
-                res.setHeader('Cache-Control', 'no-cache');
-            }
-        }
-    }));
-
-    // Fallback for SPA
-    app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api')) return next();
-        if (fs.existsSync(indexPath)) {
-            res.sendFile(indexPath);
-        } else {
-            next();
-        }
-    });
-} else {
-    console.warn('[DEBUG] Frontend build directory NOT found at:', frontendPath);
-    app.get('/', (req, res) => {
-        res.status(500).send(`
-            <h1>Architecture Error: Frontend Not Found</h1>
-            <p>The server could not locate the client build directory.</p>
-            <p><strong>Searched Path:</strong> <code>${frontendPath}</code></p>
-            <p><strong>Method:</strong> <code>process.env.FRONTEND_PATH || relative fallback</code></p>
-            <hr>
-            <small>If running via Electron, check 'electron/main.js' env setup. If standalone, check 'client/dist'.</small>
-        `);
+        res.sendFile(indexPath);
     });
 }
 
 app.use(notFound);
 app.use(errorHandler);
 
-// --- ENTERPRISE STARTUP ENGINE ---
-app.listen(PORT, HOST, async () => {
+async function startServer() {
     try {
-        // Single consolidated init: dualDB handles MySQL probe, SQLite schema, and retry worker
+        console.log('[Startup] Initializing Single-Tenant Payroll System...');
+
         await dbManager.init();
+        await summaryService.ensureSummaryTable();
 
-        // Start background sync consistency checker
-        syncWorker.start();
-
-        metricsService.updateSystemMetrics(process.env.SAFE_MODE === 'true');
-
-        // 1. Data Integrity Check (MySQL handles its own integrity)
-        console.log('[Startup] MySQL-only mode — skipping SQLite integrity check.');
-
-<<<<<<< HEAD
-        // 2. Audit Log Verification
         const auditVerification = await verifyAuditIntegrity();
-        if (!auditVerification.success) {
-            console.warn(`[Security] Audit log check failed: ${auditVerification.error}`);
-        } else {
-            console.log(`[Security] Audit logs verified (${auditVerification.count} records).`);
-        }
-=======
-        // 2. Audit Chain Verification
-        try {
-            const auditVerification = await verifyAuditIntegrity();
-            if (!auditVerification.success) {
-                console.error(`[Security] Audit log tampering detected: ${auditVerification.error}`);
+        console.log(`[Security] Audit chain verified (${auditVerification.count} records).`);
+
+        const server = app.listen(PORT, HOST, () => {
+            console.log('\n==============================================');
+            console.log(`[Single-Tenant] Server listening on ${HOST}:${PORT}`);
+            console.log('==============================================\n');
+        });
+
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.error(`[Startup Error] Port ${PORT} is already in use on ${HOST}.`);
             } else {
-                console.log(`[Security] Audit chain verified (${auditVerification.count} records).`);
+                console.error('[Startup Error]', err);
             }
-        } catch (e) { /* Non-fatal */ }
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-
-        // 3. Automated Backup
-        try {
-            await backupService.performBackup();
-            setInterval(() => backupService.performBackup(), 86400000);
-        } catch (e) { /* Non-fatal */ }
-
-        // 4. Create summary table if not exists
-        try {
-            await summaryService.ensureSummaryTable();
-        } catch (e) { /* Non-fatal */ }
-
-        // 4. Ensure company_code column exists in refresh_tokens (billing_db)
-        try {
-            await mysqlPool.execute(`ALTER TABLE refresh_tokens ADD COLUMN company_code VARCHAR(50) DEFAULT 'DEFAULT'`);
-            console.log('[Startup] Added company_code column to refresh_tokens.');
-        } catch (e) {
-            if (e.errno !== 1060) console.warn('[Startup] refresh_tokens column check:', e.message);
-        }
-
-        // 5. Auto-provision company databases for all registered companies
-        try {
-            const [companies] = await mysqlPool.query('SELECT id, company_code FROM companies WHERE company_code IS NOT NULL');
-            for (const co of companies) {
-                const code = co.company_code.toUpperCase();
-                const exists = await companyDbExists(code);
-                if (!exists) {
-                    console.log(`[Startup] Provisioning new database for company: ${code}`);
-                    await provisionCompanyDb(code, co.id);
-                }
-            }
-            console.log(`[Startup] ✓ ${companies.length} company database(s) verified.`);
-        } catch (e) {
-            console.warn('[Startup] Company DB provisioning check failed:', e.message);
-        }
-
+            process.exit(1);
+        });
     } catch (err) {
-        console.error('[Startup] Initialization error:', err.message);
+        console.error('[Startup Error]', err);
+        process.exit(1);
     }
-    console.log(`✓ [Production] Server listening on http://${HOST}:${PORT}`);
-});
+}
 
+startServer();

@@ -32,7 +32,7 @@ export async function ensureRevisionTables() {
             epf DECIMAL(12,2) DEFAULT 0,
             esi DECIMAL(12,2) DEFAULT 0,
             gross DECIMAL(12,2) DEFAULT 0,
-            revision_type ENUM('ANNUAL_INCREMENT','PROMOTION','CORRECTION','JOINING','RESTRUCTURE') DEFAULT 'CORRECTION',
+            revision_type ENUM('ANNUAL_INCREMENT','PROMOTION','CORRECTION','JOINING','RESTRUCTURE'),
             status ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
             reason TEXT,
             revised_by VARCHAR(50),
@@ -43,41 +43,9 @@ export async function ensureRevisionTables() {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `, []).catch(() => { });
-
-    // SQLite fallback
-    await dbManager.execute(`
-        CREATE TABLE IF NOT EXISTS salary_revisions (
-            id TEXT PRIMARY KEY,
-            empno TEXT NOT NULL,
-            empname TEXT,
-            department TEXT,
-            designation TEXT,
-            effective_from TEXT NOT NULL,
-            effective_to TEXT,
-            basic REAL DEFAULT 0,
-            grade_pay REAL DEFAULT 0,
-            hata REAL DEFAULT 0,
-            allowance REAL DEFAULT 0,
-            da REAL DEFAULT 0,
-            special REAL DEFAULT 0,
-            interim REAL DEFAULT 0,
-            phd REAL DEFAULT 0,
-            mphil REAL DEFAULT 0,
-            epf REAL DEFAULT 0,
-            esi REAL DEFAULT 0,
-            gross REAL DEFAULT 0,
-            revision_type TEXT DEFAULT 'CORRECTION',
-            status TEXT DEFAULT 'PENDING',
-            reason TEXT,
-            revised_by TEXT,
-            approved_by TEXT,
-            approved_at TEXT,
-            rejection_reason TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    `, []).catch(() => { });
 }
+
+
 
 // Ensure tables on module load
 ensureRevisionTables().catch(() => { });

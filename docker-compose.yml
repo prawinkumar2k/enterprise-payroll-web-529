@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: payroll-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Prawin@2k4}
+      MYSQL_DATABASE: payroll_system
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/database/singleTenantSchema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pPrawin@2k4"]
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    container_name: payroll-backend
+    restart: always
+    environment:
+      PORT: 5005
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Prawin@2k4}
+      DB_NAME: payroll_system
+      JWT_SECRET: ${JWT_SECRET:-5f4dcc3b5aa765d61d8327deb882cf99}
+      BIO_ENCRYPTION_KEY: ${BIO_ENCRYPTION_KEY}
+    ports:
+      - "5005:5005"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./server/logs:/app/server/logs
+      - ./server/backups:/app/server/backups
+
+  # Optional NGINX proxy for enterprise SSL termination
+  proxy:
+    image: nginx:alpine
+    container_name: payroll-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  mysql_data:

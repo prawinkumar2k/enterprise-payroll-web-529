@@ -1,169 +1,123 @@
-/**
- * jobQueue.service.js — Background Job Processing Engine
- *
- * Runs heavy operations (payroll generation, report export, bulk import)
- * in the background so the API responds immediately (202 Accepted).
- *
- * Pattern:
- *   1. POST /api/salary/generate  → enqueue job → return { jobId }  (instant)
- *   2. GET  /api/jobs/:jobId      → poll status  → { status, progress, result }
- *   3. Frontend polls every 1s until status = 'done' | 'failed'
- *
- * No Redis / external dependencies needed for up to ~10 concurrent jobs.
- * Scale to BullMQ + Redis when you hit 50+ concurrent users.
- */
-
 import { randomUUID } from 'crypto';
+import db from '../database/dbManager.js';
+import Redis from 'ioredis';
+import logger from '../utils/logger.js';
 
-// ─── Job Status Enum ──────────────────────────────────────────────────────────
-export const JOB_STATUS = {
-    PENDING: 'pending',
-    RUNNING: 'running',
-    DONE: 'done',
-    FAILED: 'failed',
+let redisInstance = null;
+let useRedis = false;
+
+// Graceful Redis Connection
+const initRedis = () => {
+    try {
+        const r = new Redis({
+            host: process.env.REDIS_HOST || '127.0.0.1',
+            maxRetriesPerRequest: 1, // Fail fast to use DB fallback
+            enableReadyCheck: false,
+            retryStrategy: () => null // Disable auto-retry for fallback logic
+        });
+        r.on('error', (err) => {
+            if (useRedis) {
+                logger.warn({ message: 'Redis Down. Falling back to DB Queue.', error: err.message, module: 'REDIS' });
+                useRedis = false;
+            }
+        });
+        r.on('connect', () => { 
+            useRedis = true; 
+            logger.info({ message: 'Cloud Redis Linked.', module: 'REDIS' });
+        });
+        redisInstance = r;
+    } catch (e) {
+        logger.warn('Failed to initialize Redis client. Using local DB persistence only.');
+    }
 };
 
-// ─── In-Memory Job Store ──────────────────────────────────────────────────────
-// Jobs expire after 30 minutes to prevent memory leaks
-const jobs = new Map();
-const JOB_TTL_MS = 30 * 60 * 1000;
+initRedis();
 
-// ─── Handlers Registry ───────────────────────────────────────────────────────
+const QUEUE_KEY = 'payroll:job:queue';
+export const JOB_STATUS = { PENDING: 'PENDING', RUNNING: 'RUNNING', DONE: 'DONE', FAILED: 'FAILED' };
 const handlers = new Map();
 
-// ─── Queue State ──────────────────────────────────────────────────────────────
-let processing = false;
-const queue = [];
+export function registerHandler(type, fn) { handlers.set(type, fn); }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Register a job handler by type.
- * @param {string} type  e.g. 'GENERATE_PAYROLL'
- * @param {Function} fn  async (payload, updateProgress) => result
- */
-export function registerHandler(type, fn) {
-    handlers.set(type, fn);
-}
-
-/**
- * Enqueue a new job.
- * @param {string} type     handler type key
- * @param {object} payload  data passed to handler
- * @param {object} meta     { userId, username } for audit
- * @returns {string} jobId
- */
-export function enqueue(type, payload, meta = {}) {
-    if (!handlers.has(type)) {
-        throw new Error(`No handler registered for job type: ${type}`);
-    }
-
+export async function enqueue(type, payload, meta = {}) {
+    if (!handlers.has(type)) throw new Error(`Handler not found: ${type}`);
     const jobId = randomUUID();
-    const job = {
-        id: jobId,
-        type,
-        payload,
-        meta,
-        status: JOB_STATUS.PENDING,
-        progress: 0,
-        message: 'Queued...',
-        result: null,
-        error: null,
-        createdAt: Date.now(),
-        startedAt: null,
-        doneAt: null,
-    };
-
-    jobs.set(jobId, job);
-    queue.push(jobId);
-
-    console.log(`[JobQueue] Enqueued ${type} job ${jobId.slice(0, 8)}...`);
-    _processNext();
-
+    
+    // Always persist to DB for history & fallback
+    await db.execute('INSERT INTO system_jobs (id, type, payload, status) VALUES (?, ?, ?, ?)', [jobId, type, JSON.stringify(payload), JOB_STATUS.PENDING]);
+    
+    if (useRedis && redisInstance) {
+        try {
+            await redisInstance.lpush(QUEUE_KEY, JSON.stringify({ jobId, type, payload, meta }));
+            logger.info({ message: 'Job enqueued (Cloud Redis)', jobId, type });
+        } catch (e) {
+            useRedis = false;
+            logger.warn('Redis push failed. Relying on DB polling.');
+        }
+    } else {
+        logger.info({ message: 'Job enqueued (Local DB Persistence)', jobId, type });
+        _startDbWorker(); // Fallback to DB polling worker
+    }
     return jobId;
 }
 
-/**
- * Get a job's current status snapshot.
- */
-export function getJob(jobId) {
-    return jobs.get(jobId) || null;
+export async function getJob(jobId) {
+    const [rows] = await db.query('SELECT * FROM system_jobs WHERE id = ?', [jobId]);
+    return rows ? rows[0] : null;
 }
 
-/**
- * List all active (pending/running) jobs.
- */
-export function getActiveJobs() {
-    return [...jobs.values()].filter(j =>
-        j.status === JOB_STATUS.PENDING || j.status === JOB_STATUS.RUNNING
-    );
+/** ── DB Worker (Fallback/Single-Instance) ── **/
+let dbWorkerRunning = false;
+async function _startDbWorker() {
+    if (dbWorkerRunning || useRedis) return;
+    dbWorkerRunning = true;
+    while (!useRedis) {
+        try {
+            const [rows] = await db.query('SELECT * FROM system_jobs WHERE status = ? ORDER BY created_at ASC LIMIT 1', [JOB_STATUS.PENDING]);
+            if (!rows.length) break;
+            await _processJob(rows[0].id, rows[0].type, JSON.parse(rows[0].payload), {});
+        } catch (err) { break; }
+    }
+    dbWorkerRunning = false;
 }
 
-// ─── Internal Processing ─────────────────────────────────────────────────────
+/** ── Redis Distributed Worker ── **/
+export async function startWorker() {
+    logger.info({ message: 'Initializing Distributed Cloud Worker...', module: 'WORKER' });
+    while (true) {
+        if (!useRedis) { await new Promise(r => setTimeout(r, 5000)); _startDbWorker(); continue; }
+        try {
+            const res = await redisInstance.brpop(QUEUE_KEY, 5);
+            if (!res) continue;
+            const { jobId, type, payload, meta } = JSON.parse(res[1]);
+            await _processJob(jobId, type, payload, meta);
+        } catch (err) { await new Promise(r => setTimeout(r, 1000)); }
+    }
+}
 
-async function _processNext() {
-    if (processing || queue.length === 0) return;
-    processing = true;
-
-    const jobId = queue.shift();
-    const job = jobs.get(jobId);
-
-    if (!job) { processing = false; _processNext(); return; }
-
-    job.status = JOB_STATUS.RUNNING;
-    job.startedAt = Date.now();
-    job.message = 'Processing...';
-
-    const updateProgress = (pct, msg) => {
-        job.progress = Math.min(100, Math.max(0, pct));
-        job.message = msg || job.message;
-    };
-
+async function _processJob(jobId, type, payload, meta) {
+    await db.execute('UPDATE system_jobs SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [JOB_STATUS.RUNNING, jobId]);
+    const handler = handlers.get(type);
+    const updateProgress = async (pct) => await db.execute('UPDATE system_jobs SET progress = ? WHERE id = ?', [Math.min(100, pct), jobId]);
     try {
-        const handler = handlers.get(job.type);
-        job.result = await handler(job.payload, updateProgress, job.meta);
-        job.status = JOB_STATUS.DONE;
-        job.progress = 100;
-        job.message = 'Completed successfully.';
-        console.log(`[JobQueue] ✓ Job ${job.type} ${jobId.slice(0, 8)} done in ${Date.now() - job.startedAt}ms`);
+        const out = await handler(payload, updateProgress, meta);
+        await db.execute('UPDATE system_jobs SET status = ?, progress = 100, result = ? WHERE id = ?', [JOB_STATUS.DONE, JSON.stringify(out || {}), jobId]);
     } catch (err) {
-        job.status = JOB_STATUS.FAILED;
-        job.error = err.message || 'Unknown error';
-        job.message = `Failed: ${job.error}`;
-        console.error(`[JobQueue] ✗ Job ${job.type} ${jobId.slice(0, 8)} failed:`, err.message);
-    } finally {
-        job.doneAt = Date.now();
-        processing = false;
-        // Schedule cleanup after TTL
-        setTimeout(() => jobs.delete(jobId), JOB_TTL_MS);
-        // Process next job in queue
-        _processNext();
-    }
-}
-
-// ─── Express Route Handlers ──────────────────────────────────────────────────
-
-/**
- * GET /api/jobs/:jobId
- * Returns current job status. Frontend polls this every 1s.
- */
-export function jobStatusHandler(req, res) {
-    const job = getJob(req.params.jobId);
-    if (!job) {
-        return res.status(404).json({ success: false, message: 'Job not found or expired.' });
-    }
-    res.json({
-        success: true,
-        job: {
-            id: job.id,
-            type: job.type,
-            status: job.status,
-            progress: job.progress,
-            message: job.message,
-            result: job.status === JOB_STATUS.DONE ? job.result : null,
-            error: job.status === JOB_STATUS.FAILED ? job.error : null,
+        const [rows] = await db.query('SELECT attempts FROM system_jobs WHERE id = ?', [jobId]);
+        const attempts = (rows[0]?.attempts || 0) + 1;
+        if (attempts < 3) {
+            await db.execute('UPDATE system_jobs SET attempts = ?, status = "PENDING" WHERE id = ?', [attempts, jobId]);
+            if (useRedis) await redisInstance.lpush(QUEUE_KEY, JSON.stringify({ jobId, type, payload, meta }));
+        } else {
+            await db.execute('UPDATE system_jobs SET status = "FAILED", error = ? WHERE id = ?', [err.message, jobId]);
         }
-    });
+    }
 }
 
-export default { registerHandler, enqueue, getJob, getActiveJobs, jobStatusHandler, JOB_STATUS };
+export async function jobStatusHandler(req, res) {
+    const job = await getJob(req.params.jobId);
+    if (!job) return res.status(404).json({ success: false, message: 'Job not found.' });
+    res.json({ success: true, job });
+}
+
+export default { registerHandler, enqueue, getJob, jobStatusHandler, startWorker, JOB_STATUS };

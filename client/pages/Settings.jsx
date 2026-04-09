@@ -8,20 +8,17 @@ import {
     ToggleLeft,
     Monitor,
     PenTool,
-<<<<<<< HEAD
-    Loader2
-=======
     Calculator,
     Loader2,
     CheckCircle2,
     Image as ImageIcon,
     Trash2,
-    UploadCloud
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
+    UploadCloud,
+    Settings as SettingsIcon
 } from "lucide-react";
 
 export default function Settings() {
-    const { settings, updateGlobalSettings, isLoading: isGlobalLoading, theme } = useSettings();
+    const { settings, updateGlobalSettings, isLoading: isGlobalLoading } = useSettings();
     const [localSettings, setLocalSettings] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('organization');
@@ -64,7 +61,7 @@ export default function Settings() {
                 <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="bg-primary/10 p-2 rounded-xl">
-                            <Settings className="w-6 h-6 text-primary" />
+                            <SettingsIcon className="w-6 h-6 text-primary" />
                         </div>
                         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/60">System Core</span>
                     </div>
@@ -108,59 +105,9 @@ export default function Settings() {
                                                     <h3 className="text-2xl font-black text-foreground tracking-tight">Branding & Identity</h3>
                                                 </div>
 
-<<<<<<< HEAD
-                            {activeTab === 'organization' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                                    <h3 className="text-lg font-bold border-b pb-2">Branding & Identity</h3>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div>
-                                            <label htmlFor="org-name" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Name</label>
-                                            <input id="org-name" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_name || ''} onChange={e => setLocalSettings({ ...localSettings, org_name: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="org-address" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Full Address</label>
-                                            <textarea id="org-address" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20 h-20" value={localSettings.org_address || ''} onChange={e => setLocalSettings({ ...localSettings, org_address: e.target.value })} />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label htmlFor="org-phone" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Phone</label>
-                                                <input id="org-phone" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_phone || ''} onChange={e => setLocalSettings({ ...localSettings, org_phone: e.target.value })} />
-                                            </div>
-                                            <div>
-                                                <label htmlFor="org-email" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Email</label>
-                                                <input id="org-email" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 ring-primary/20" value={localSettings.org_email || ''} onChange={e => setLocalSettings({ ...localSettings, org_email: e.target.value })} />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <p className="block text-[10px] font-black uppercase text-gray-400 mb-1">Organization Logo</p>
-                                            <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-primary/40 transition-colors group">
-                                                {localSettings.org_logo_url ? (
-                                                    <div className="relative">
-                                                        <img src={localSettings.org_logo_url} alt="Logo Preview" className="w-24 h-24 object-contain bg-white rounded-lg shadow-sm border p-2" />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setLocalSettings({ ...localSettings, org_logo_url: '' })}
-                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
-                                                        >
-                                                            <ToggleLeft className="w-4 h-4 rotate-45" /> {/* Using an icon that looks like X if possible, or just Trash */}
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
-                                                        <Building className="w-10 h-10 text-gray-300" />
-                                                    </div>
-                                                )}
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-bold text-gray-700">Institutional Branding</p>
-                                                    <p className="text-xs text-gray-400 mb-4">Upload a high-resolution PNG or JPG logo. This will be used in all reports and certificates.</p>
-                                                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-black cursor-pointer hover:bg-gray-100 transition-all shadow-sm active:scale-95">
-                                                        <Save className="w-3.5 h-3.5 rotate-90" /> {/* Symbolizing upload */}
-                                                        CHOOSE FILE
-=======
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div className="md:col-span-2">
                                                         <label className="text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-2 block">Enterprise Name</label>
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
                                                         <input
                                                             type="text"
                                                             className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl outline-none focus:ring-4 ring-primary/10 focus:border-primary transition-all text-lg font-bold"
@@ -287,34 +234,8 @@ export default function Settings() {
                                                     </div>
                                                 ))}
                                             </div>
-<<<<<<< HEAD
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'print' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                                    <h3 className="text-lg font-bold border-b pb-2">Print & Style Defaults</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label htmlFor="print-font-family" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Main Font Family</label>
-                                            <select id="print-font-family" className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_family} onChange={e => setLocalSettings({ ...localSettings, print_font_family: e.target.value })}>
-                                                <option>Times New Roman</option>
-                                                <option>Arial</option>
-                                                <option>Inter</option>
-                                                <option>serif</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="print-font-size" className="block text-[10px] font-black uppercase text-gray-400 mb-1">Base Font Size</label>
-                                            <input id="print-font-size" type="text" className="w-full px-4 py-2 bg-gray-50 border rounded-lg" value={localSettings.print_font_size} onChange={e => setLocalSettings({ ...localSettings, print_font_size: e.target.value })} />
-                                        </div>
-                                    </div>
-=======
                                         </div>
                                     )}
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
                                     {activeTab === 'features' && (
                                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-500">

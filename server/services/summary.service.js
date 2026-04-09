@@ -20,26 +20,26 @@ import cache from './cache.service.js';
  * Safe to call on every startup.
  */
 export async function ensureSummaryTable() {
-    // SQLite-compatible CREATE TABLE
+    // MySQL-compatible CREATE TABLE
     const sql = `
         CREATE TABLE IF NOT EXISTS att_monthly_summary (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            empno         TEXT NOT NULL,
-            empname       TEXT,
-            designation   TEXT,
-            category      TEXT,
-            summary_month TEXT NOT NULL,
-            total_days    INTEGER DEFAULT 0,
-            present_days  INTEGER DEFAULT 0,
-            absent_days   INTEGER DEFAULT 0,
-            lop_days      REAL    DEFAULT 0,
-            leave_days    INTEGER DEFAULT 0,
-            half_days     INTEGER DEFAULT 0,
-            weekoff_days  INTEGER DEFAULT 0,
-            od_days       INTEGER DEFAULT 0,
-            working_hrs   REAL    DEFAULT 0,
-            updated_at    TEXT NOT NULL DEFAULT (datetime('now','localtime')),
-            UNIQUE(empno, summary_month)
+            id            INT AUTO_INCREMENT PRIMARY KEY,
+            empno         VARCHAR(50) NOT NULL,
+            empname       VARCHAR(200),
+            designation   VARCHAR(200),
+            category      VARCHAR(100),
+            summary_month VARCHAR(7) NOT NULL,
+            total_days    INT DEFAULT 0,
+            present_days  INT DEFAULT 0,
+            absent_days   INT DEFAULT 0,
+            lop_days      DECIMAL(5,1) DEFAULT 0,
+            leave_days    INT DEFAULT 0,
+            half_days     INT DEFAULT 0,
+            weekoff_days  INT DEFAULT 0,
+            od_days       INT DEFAULT 0,
+            working_hrs   DECIMAL(8,2) DEFAULT 0,
+            updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_emp_month (empno, summary_month)
         )
     `;
     try {
@@ -47,11 +47,12 @@ export async function ensureSummaryTable() {
         console.log('[Summary] att_monthly_summary table ready.');
     } catch (err) {
         // Table already exists or minor error — non-fatal
-        if (!err.message?.includes('already exists')) {
+        if (!err.message?.includes('already exists') && err.errno !== 1050) {
             console.warn('[Summary] Table init warning:', err.message);
         }
     }
 }
+
 
 /**
  * Rebuild the summary for a given month from raw attendance data.

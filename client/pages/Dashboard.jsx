@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useState, useEffect, lazy, Suspense } from "react";
-=======
-import React, { useState } from "react";
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
+import React, { useState, lazy, Suspense } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Users,
@@ -49,47 +45,17 @@ function StatCard({ icon, label, value, subValue, type = "default" }) {
 
 export default function Dashboard() {
   const now = new Date();
-<<<<<<< HEAD
-  const [month, setMonth] = useState(() => String(now.getMonth() + 1).padStart(2, "0"));
-  const [year, setYear] = useState(() => String(now.getFullYear()));
-  const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchStats = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/dashboard/stats?month=${month}&year=${year}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-      }
-    } catch {
-      toast.error("Failed to sync dashboard data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, year]);
-=======
   const [month, setMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
   const [year, setYear] = useState(String(now.getFullYear()));
+
   // useQuery with apiClient — auto-401 redirect, 60s cache
-  const { data: queryData, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['dashboard-stats', month, year],
     queryFn: () => apiGet(`/api/dashboard/stats?month=${month}&year=${year}`).then(r => r.data),
     staleTime: 60 * 1000,
     retry: 1,
     onError: () => toast.error('Failed to load dashboard data'),
   });
-
-  const data = queryData;
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
   if (!data && isLoading) {
     return (
@@ -116,7 +82,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout activeRoute="dashboard">
-      <div className="space-y-8">
+      <div className="space-y-8 animate-in fade-in duration-500">
 
         {/* 1. SEAMLESS HEADER & CONTROLS */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
@@ -151,7 +117,7 @@ export default function Dashboard() {
           <StatCard
             icon={<Users className="w-6 h-6" />}
             label="Active Workforce"
-            value={kpis.totalEmployees}
+            value={kpis.totalEmployees || 0}
             subValue="Verified"
           />
           <StatCard
@@ -192,8 +158,8 @@ export default function Dashboard() {
             </h3>
             <div className="space-y-3">
               {data?.alerts?.length > 0 ? (
-                data.alerts.map((alert) => (
-                  <div key={`${alert.module}-${alert.message}`} className={`p-4 rounded-2xl border flex items-start gap-4 ${alert.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-orange-50 border-orange-100 text-orange-700'
+                data.alerts.map((alert, idx) => (
+                  <div key={idx} className={`p-4 rounded-2xl border flex items-start gap-4 ${alert.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-orange-50 border-orange-100 text-orange-700'
                     }`}>
                     <div className="pt-0.5">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -220,7 +186,7 @@ export default function Dashboard() {
             </h3>
             <div className="space-y-4">
               {data?.recentActivity?.map((log, idx) => (
-                <div key={log.LogID ?? `${log.Module}-${log.CreatedAt}-${idx}`} className="flex items-center gap-4 group cursor-default">
+                <div key={idx} className="flex items-center gap-4 group cursor-default">
                   <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${log.ActionType === 'PRINT' ? 'bg-indigo-500' :
                     log.ActionType === 'VIEW' ? 'bg-emerald-500' : 'bg-amber-500'
                     }`} />
@@ -233,6 +199,7 @@ export default function Dashboard() {
                   <ArrowRightIcon className="w-4 h-4 text-gray-200 group-hover:text-primary transition-colors" />
                 </div>
               ))}
+              {!data?.recentActivity?.length && <p className="text-center text-gray-300 py-10 font-bold uppercase text-[10px] tracking-widest">No recent intelligence logs</p>}
             </div>
           </div>
 
@@ -259,5 +226,5 @@ function ArrowRightIcon(props) {
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
     </svg>
-  )
+  );
 }

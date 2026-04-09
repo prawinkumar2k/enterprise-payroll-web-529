@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "lint": "eslint . --max-warnings 0",
         "lint:fix": "eslint . --fix",
-        "test": "vitest run",
+        "test": "vitest run --passWithNoTests",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage"
     },

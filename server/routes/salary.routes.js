@@ -7,7 +7,9 @@ import {
     applyBonus,
     reverseSalary,
     emailPayslip,
-    mySalaryHistory
+    mySalaryHistory,
+    bulkEmailPayslips,
+    getSalaryAnalytics
 } from '../controllers/salary.controller.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 import { jobStatusHandler } from '../services/jobQueue.service.js';
@@ -28,6 +30,8 @@ router.put('/:id', updateSalaryRow);
 router.post('/bonus', applyBonus);
 router.post('/reverse', reverseSalary);
 router.post('/email-payslip', emailPayslip);
+router.post('/bulk-email', bulkEmailPayslips);
+router.get('/analytics', getSalaryAnalytics);
 
 
 

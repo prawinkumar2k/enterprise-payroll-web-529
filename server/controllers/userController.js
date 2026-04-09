@@ -35,13 +35,11 @@ export const createUser = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(Password, 10);
-        const now = new Date();
-
         const result = await dbManager.execute(
             `INSERT INTO userdetails 
-            (UserID, Password, UserName, Qualification, Department, Role, Contact, Remark, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [UserID, hashedPassword, UserName, Qualification, Department, Role, Contact, Remark, now, now]
+            (UserID, Password, UserName, Qualification, Department, Role, Contact, Remark)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [UserID, hashedPassword, UserName, Qualification, Department, Role, Contact, Remark]
         );
 
         if (req.audit) {
@@ -74,13 +72,11 @@ export const updateUser = async (req, res) => {
             finalPassword = await bcrypt.hash(Password, 10);
         }
 
-        const now = new Date();
-
         await dbManager.execute(
             `UPDATE userdetails SET 
-            UserID=?, Password=?, UserName=?, Qualification=?, Department=?, Role=?, Contact=?, Remark=?, updated_at=?
+            UserID=?, Password=?, UserName=?, Qualification=?, Department=?, Role=?, Contact=?, Remark=?
             WHERE id=?`,
-            [UserID, finalPassword, UserName, Qualification, Department, Role, Contact, Remark, now, id]
+            [UserID, finalPassword, UserName, Qualification, Department, Role, Contact, Remark, id]
         );
 
         if (req.audit) {

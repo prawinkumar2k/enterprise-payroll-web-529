@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { getApiUrl } from './api';
+import { getApiUrl } from './apiClient';
 
 /**
  * SyncService - Client-side logic for Manual & Auto Synchronization

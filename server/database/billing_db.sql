@@ -1195,4 +1195,24 @@ END
 ;;
 delimiter ;
 
+-- ----------------------------
+-- Table structure for biometric_profiles
+-- ----------------------------
+DROP TABLE IF EXISTS `biometric_profiles`;
+CREATE TABLE `biometric_profiles` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_type` enum('employee','user') NOT NULL,
+  `external_id` int NOT NULL COMMENT 'FK to employees.id or userdetails.id',
+  `company_id` int NOT NULL,
+  `biometric_type` enum('fingerprint','face','voice') NOT NULL,
+  `template_data` longtext NOT NULL COMMENT 'Base64 encoded template or feature vector',
+  `quality_score` int DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `last_used` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_bio_company` (`company_id`),
+  KEY `idx_bio_lookup` (`user_type`, `external_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

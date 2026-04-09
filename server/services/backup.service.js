@@ -1,52 +1,50 @@
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import util from 'util';
+const execute = util.promisify(exec);
 
 /**
- * Enterprise Backup Service
- * Manages automated SQLite database rotation and retention.
+ * Enterprise MySQL Backup Service (Single-Tenant)
  */
 class BackupService {
     constructor() {
-        this.dataPath = process.env.DATA_PATH || process.cwd();
-        this.dbPath = path.join(this.dataPath, 'local_payroll.db');
-        this.backupDir = path.join(this.dataPath, 'backups');
-        this.retentionCount = 7; // Keep last 7 days
+        this.backupDir = path.join(process.cwd(), 'backups');
+        this.retentionCount = 30; // Keep 30 days of backups
 
         if (!fs.existsSync(this.backupDir)) {
             fs.mkdirSync(this.backupDir, { recursive: true });
         }
     }
 
-    /**
-     * Perform an automated backup
-     */
     async performBackup() {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `payroll_backup_${timestamp}.sql`;
+        const destPath = path.join(this.backupDir, filename);
+
+        const host = process.env.DB_HOST || 'localhost';
+        const user = process.env.DB_USER || 'root';
+        const password = process.env.DB_PASSWORD || '';
+        const database = process.env.DB_NAME || 'payroll_system';
+
         try {
-            if (!fs.existsSync(this.dbPath)) return { success: false, error: 'DB_NOT_FOUND' };
-
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const destPath = path.join(this.backupDir, `backup-${timestamp}.sqlite`);
-
-            // Use synchronous copy to ensure file is locked/flushed properly in Node
-            fs.copyFileSync(this.dbPath, destPath);
-
+            // Use mysqldump for consistent backups
+            const cmd = `mysqldump -h ${host} -u ${user} -p${password} ${database} > "${destPath}"`;
+            await execute(cmd);
+            
             this.rotateBackups();
-
-            console.log(`[BackupService] Snapshot created: ${destPath}`);
+            console.log(`[BackupService] MySQL snapshot created: ${filename}`);
             return { success: true, path: destPath };
         } catch (error) {
-            console.error('[BackupService] Backup failed:', error);
+            console.error('[BackupService] MySQL backup failed:', error.message);
             return { success: false, error: error.message };
         }
     }
 
-    /**
-     * Clean up old backups based on retention policy
-     */
     rotateBackups() {
         try {
             const files = fs.readdirSync(this.backupDir)
-                .filter(f => f.startsWith('backup-'))
+                .filter(f => f.startsWith('payroll_backup_'))
                 .map(f => ({ name: f, time: fs.statSync(path.join(this.backupDir, f)).mtime.getTime() }))
                 .sort((a, b) => b.time - a.time);
 
@@ -55,26 +53,6 @@ class BackupService {
                 toDelete.forEach(f => fs.unlinkSync(path.join(this.backupDir, f.name)));
             }
         } catch (e) { }
-    }
-
-    /**
-     * Restore from a specific backup file
-     */
-    async restoreBackup(backupFileName) {
-        const sourcePath = path.join(this.backupDir, backupFileName);
-        if (!fs.existsSync(sourcePath)) throw new Error('BACKUP_FILE_NOT_FOUND');
-
-        // Safety: Backup current DB before overwrite
-        const safetyPath = this.dbPath + '.bak';
-        if (fs.existsSync(this.dbPath)) fs.copyFileSync(this.dbPath, safetyPath);
-
-        try {
-            fs.copyFileSync(sourcePath, this.dbPath);
-            return { success: true };
-        } catch (err) {
-            if (fs.existsSync(safetyPath)) fs.copyFileSync(safetyPath, this.dbPath);
-            throw err;
-        }
     }
 }
 

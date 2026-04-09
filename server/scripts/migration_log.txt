@@ -1,0 +1,50 @@
+﻿node : file:///C:/Users/Hp/Do
+cuments/enterprise-payroll-we
+b-529/server/scripts/migrate_
+employee_module.js:84
+At line:1 char:1
++ node 
+migrate_employee_module.js 
+2>&1 | Out-File -FilePath 
+migration_l ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (file://  
+  /C:/User...ee_module.js:   
+ 84:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+            await 
+pool.query(`ALTER TABLE 
+app_settings ADD COLUMN 
+geofence_radius INT DEFAULT 
+500`); -- Default 500m
+                             
+                             
+                             
+                         ^^^
+
+SyntaxError: Invalid or 
+unexpected token
+    at 
+compileSourceTextModule (node
+:internal/modules/esm/utils:3
+46:16)
+    at 
+ModuleLoader.moduleStrategy (
+node:internal/modules/esm/tra
+nslators:146:18)
+    at #translate (node:inter
+nal/modules/esm/loader:497:12
+)
+    at ModuleLoader.loadAndTr
+anslate (node:internal/module
+s/esm/loader:544:27)
+    at async ModuleJob._link 
+(node:internal/modules/esm/mo
+dule_job:148:19)
+
+Node.js v20.20.0

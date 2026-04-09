@@ -6,6 +6,10 @@ const fmt = (n) => '₹' + (parseFloat(n) || 0).toLocaleString('en-IN', { minimu
 const nowMY = () => { const d = new Date(); return { month: String(d.getMonth() + 1).padStart(2, '0'), year: String(d.getFullYear()) }; };
 
 const PAYMENT_MODES = ['BANK', 'CASH', 'CHEQUE', 'UPI', 'NEFT', 'RTGS'];
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
+});
 
 export default function IncomePage() {
     const [entries, setEntries] = useState([]);
@@ -15,15 +19,11 @@ export default function IncomePage() {
     const [filter, setFilter] = useState({ ...nowMY(), search: '', category: '' });
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [total, setTotal] = useState(0);
     const [modal, setModal] = useState({ open: false, entry: null });
     const [delConfirm, setDelConfirm] = useState(null);
     const [form, setForm] = useState({});
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-
-    const token = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-    const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -31,12 +31,12 @@ export default function IncomePage() {
             const q = new URLSearchParams({ month: filter.month, year: filter.year, page, limit: 50 });
             if (filter.search) q.set('search', filter.search);
             if (filter.category) q.set('category', filter.category);
-            const res = await fetch(API(`/income?${q}`), { headers: headers() });
+            const res = await fetch(API(`/income?${q}`), { headers: getAuthHeaders() });
             const data = await res.json();
-            if (data.success) { setEntries(data.data || []); setTotal(data.total); setTotalPages(data.totalPages || 1); }
+            if (data.success) { setEntries(data.data || []); setTotalPages(data.totalPages || 1); }
 
             const my = `${filter.month}-${filter.year}`;
-            const sumRes = await fetch(API(`/income/summary/${my}`), { headers: headers() });
+            const sumRes = await fetch(API(`/income/summary/${my}`), { headers: getAuthHeaders() });
             const sumData = await sumRes.json();
             if (sumData.success) setSummary(sumData);
         } catch (e) { console.error(e); }
@@ -44,13 +44,19 @@ export default function IncomePage() {
     }, [filter, page]);
 
     const loadCats = useCallback(async () => {
-        const res = await fetch(API('/income/categories'), { headers: headers() });
+        const res = await fetch(API('/income/categories'), { headers: getAuthHeaders() });
         const d = await res.json();
         if (d.success) setCategories(d.data || []);
     }, []);
 
-    useEffect(() => { loadCats(); }, []);
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        const timer = setTimeout(() => { void loadCats(); }, 0);
+        return () => clearTimeout(timer);
+    }, [loadCats]);
+    useEffect(() => {
+        const timer = setTimeout(() => { void load(); }, 0);
+        return () => clearTimeout(timer);
+    }, [load]);
 
     const openAdd = () => {
         setForm({ received_date: new Date().toISOString().split('T')[0], payment_mode: 'BANK', currency: 'INR' });
@@ -73,7 +79,7 @@ export default function IncomePage() {
         try {
             const url = modal.entry ? API(`/income/${modal.entry.id}`) : API('/income');
             const method = modal.entry ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(form) });
+            const res = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(form) });
             const d = await res.json();
             if (d.success) { closeModal(); load(); }
             else setError(d.message || 'Save failed.');
@@ -82,7 +88,7 @@ export default function IncomePage() {
     };
 
     const del = async (id) => {
-        await fetch(API(`/income/${id}`), { method: 'DELETE', headers: headers() });
+        await fetch(API(`/income/${id}`), { method: 'DELETE', headers: getAuthHeaders() });
         setDelConfirm(null);
         load();
     };
@@ -157,7 +163,7 @@ export default function IncomePage() {
                                     <tr><td colSpan={7} className="p-20 text-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse">Synchronizing Data...</td></tr>
                                 ) : entries.length === 0 ? (
                                     <tr><td colSpan={7} className="p-20 text-center text-muted-foreground">No income records found for this period.</td></tr>
-                                ) : entries.map((e, i) => (
+                                ) : entries.map((e) => (
                                     <tr key={e.id} className="hover:bg-muted/20 transition-colors group">
                                         <td className="p-5 text-sm font-bold text-foreground/80">{e.received_date?.split('T')[0]}</td>
                                         <td className="p-5">

@@ -10,35 +10,35 @@ const REQUIRED_VARS = [
     {
         key: 'JWT_SECRET',
         description: 'JWT signing secret (min 32 chars, use: openssl rand -hex 32)',
-        validate: (v) => v.length >= 32,
+        validate: (v) => v && v.length >= 32 && !v.includes('change-this'),
+        hint: 'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    },
+    {
+        key: 'BIO_ENCRYPTION_KEY',
+        description: 'AES-256 key for biometric templates (64 hex chars)',
+        validate: (v) => /^[0-9a-fA-F]{64}$/.test(v),
         hint: 'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
     },
     {
         key: 'DB_HOST',
         description: 'MySQL database host',
-        optional: true // SQLite-only mode is valid
     },
     {
         key: 'DB_USER',
         description: 'MySQL database username',
-        optional: true
     },
     {
         key: 'DB_PASSWORD',
         description: 'MySQL database password',
-        optional: true
     },
     {
         key: 'DB_NAME',
         description: 'MySQL database name',
-        optional: true
     },
     {
-        key: 'ENCRYPTION_KEY',
-        description: 'AES-256 field encryption key (exactly 64 hex chars = 32 bytes)',
-        optional: true, // Will be required once PII encryption is active
-        validate: (v) => /^[0-9a-fA-F]{64}$/.test(v),
-        hint: 'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        key: 'NODE_ENV',
+        description: 'Environment mode (must be "production" for live deployment)',
+        validate: (v) => ['production', 'development', 'test'].includes(v),
     },
 ];
 

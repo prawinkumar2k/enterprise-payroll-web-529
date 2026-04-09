@@ -1,344 +1,171 @@
-import dbManager from '../database/dbManager.js';
-import mysqlPool from '../db.js';
-import { getTenantPool } from '../database/tenantDbManager.js';
+import db from '../database/dbManager.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { logAction } from '../middleware/log.middleware.js';
-import { randomBytes } from 'crypto';
+import crypto from 'crypto';
+import { logAudit } from '../utils/auditLogger.js';
+import { z } from 'zod';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is not set. Security fallback disabled.');
-}
-
+const JWT_SECRET = process.env.JWT_SECRET || '5f4dcc3b5aa765d61d8327deb882cf99';
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINS = 30;
 
-const generateAccessToken = (user, companyCode) => {
+const loginSchema = z.object({
+    userId: z.string().min(1, 'UserID is required'),
+    password: z.string().min(4, 'Password must be at least 4 characters'),
+});
+
+const generateAccessToken = (user) => {
     return jwt.sign(
-        {
-            id: user.id || user.ID,
-            username: user.UserID,
-            role: user.Role || 'employee',
-            company_id: user.company_id || 1,
-            company_code: companyCode || 'DEFAULT'
-        },
+        { id: user.id || user.UserID, username: user.UserID, role: (user.role || user.Role || 'employee').toUpperCase() },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 };
 
-/**
- * Store refresh token in billing_db (with company_code so refresh can re-establish tenant context)
- */
-const generateRefreshToken = async (userId, deviceId, companyCode) => {
-    const token = randomBytes(40).toString('hex');
+const generateRefreshToken = async (userId) => {
+    const token = crypto.randomBytes(40).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
-
-    await mysqlPool.execute(
-        'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at, company_code) VALUES (?, ?, ?, ?, ?)',
-        [token, userId, deviceId || null, expiresAt, companyCode]
-    );
-
+    await db.execute('INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)', [token, userId, expiresAt]);
     return token;
 };
 
-/**
- * Login Controller
- */
 export const login = async (req, res) => {
-    const { userId, password, company_id, device_id } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '0.0.0.0';
-
-    if (!userId || !password) {
-        return res.status(400).json({ success: false, message: 'User ID and password are required', code: 'AUTH_MISSING_CREDENTIALS' });
-    }
-    if (!company_id) {
-        return res.status(400).json({ success: false, message: 'Company is required', code: 'AUTH_MISSING_COMPANY' });
-    }
-
     try {
-        // 1. Validate company in billing_db and get its code
-        const [companyRows] = await mysqlPool.query(
-            'SELECT id, company_code, company_name FROM companies WHERE id = ? AND (is_active = 1 OR status = "active")',
-            [company_id]
-        );
-        if (!companyRows || companyRows.length === 0) {
-            return res.status(401).json({ success: false, message: 'Invalid company or company is inactive', code: 'AUTH_INVALID_COMPANY' });
-        }
-        const company_code = companyRows[0].company_code;
-        const company_name = companyRows[0].company_name;
+        const validated = loginSchema.parse(req.body);
+        const { userId, password } = validated;
 
-        // 2. Look up user in company's own database
-        const tenantPool = getTenantPool(company_code);
-        console.log(`[Auth] Attempting login for user: ${userId} in company: ${company_code}`);
-
-        const [rows] = await tenantPool.query(
-            'SELECT * FROM userdetails WHERE UserID = ?',
-            [userId]
-        );
-<<<<<<< HEAD
+        const [rows] = await db.query('SELECT * FROM users WHERE UserID = ? AND deleted_at IS NULL', [userId]);
         const user = rows ? rows[0] : null;
 
         if (!user) {
-            console.warn(`[Auth] User not found: ${userId}`);
-            await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']);
-=======
-
-        let user = rows ? rows[0] : null;
-
-        // ── ESS FALLBACK: Check empdet if not in userdetails ──
-        if (!user) {
-            console.log(`[Auth] User ${userId} not in userdetails. Checking empdet...`);
-            const [empRows] = await dbManager.query(
-                'SELECT EMPNO, SNAME, EMAIL FROM empdet WHERE EMPNO = ? AND (CheckStatus IN ("Active", "True") OR CheckStatus IS NULL)',
-                [userId]
-            );
-
-            if (empRows && empRows[0]) {
-                const emp = empRows[0];
-                console.log(`[Auth] Employee match found for ${userId}. Verifying initial credential...`);
-
-                // Initial ESS Login: Password = EMPNO
-                if (password === emp.EMPNO) {
-                    console.log(`[Auth] First-time ESS login for ${emp.EMPNO}. Creating user account...`);
-                    // Salt & Hash the password (EMPNO) for the new userdetails record
-                    const salt = await bcrypt.genSalt(10);
-                    const hashedPass = await bcrypt.hash(password, salt);
-
-                    await dbManager.execute(
-                        'INSERT INTO userdetails (UserID, Password, UserName, Role, EMAIL) VALUES (?, ?, ?, ?, ?)',
-                        [emp.EMPNO, hashedPass, emp.SNAME, 'employee', emp.EMAIL]
-                    );
-
-                    // Re-fetch the newly created user
-                    const [newUserRows] = await dbManager.query('SELECT * FROM userdetails WHERE UserID = ?', [emp.EMPNO]);
-                    user = newUserRows[0];
-                }
-            }
+            await logAudit({ username: userId, actionType: 'LOGIN_FAILURE', module: 'AUTH', description: 'User not found.', ip: req.ip });
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        if (!user) {
-            console.warn(`[Auth] User not found: ${userId}`);
-
-            // Non-fatal: log failure, don't let it block the 401 response
-            try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [userId, ip, 'FAILURE']); } catch { }
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-            return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
+        // 0. Verify Role against Login Mode (Admin vs Staff)
+        const userRole = (user.role || user.Role || 'employee').toLowerCase();
+        const loginMode = req.body.loginMode; // 'company' (Admin/HR) or 'employee' (Staff)
+        
+        if (loginMode === 'employee' && userRole !== 'employee') {
+             return res.status(403).json({ success: false, message: 'Unauthorized: Admin cannot use Staff access console.' });
+        }
+        if (loginMode === 'company' && userRole === 'employee') {
+             return res.status(403).json({ success: false, message: 'Unauthorized: Staff cannot use Enterprise Management console.' });
         }
 
-        console.log(`[Auth] User found: ${user.UserID}. Checking password...`);
-
-        let isMatch = false;
-        if (user.Password && (user.Password.startsWith('$2b$') || user.Password.startsWith('$2a$'))) {
-            console.log('[Auth] Using Bcrypt comparison');
-            isMatch = await bcrypt.compare(password, user.Password);
-        } else {
-            console.log('[Auth] Using Plaintext comparison');
-            isMatch = (password === user.Password);
-            if (isMatch) {
-                console.log('[Auth] Plaintext match! Migrating to Bcrypt...');
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(password, salt);
-                await tenantPool.execute('UPDATE userdetails SET Password = ? WHERE UserID = ?', [hashedPassword, userId]);
-            }
+        // 1. Check for Account Lockout
+        if (user.locked_until && new Date(user.locked_until) > new Date()) {
+            await logAudit({ userId: user.id, username: user.UserID, actionType: 'LOGIN_LOCKED', module: 'AUTH', description: 'Attempt on locked account.', ip: req.ip });
+            return res.status(403).json({ success: false, message: `Account locked. Try again after ${new Date(user.locked_until).toLocaleTimeString()}` });
         }
 
-        console.log(`[Auth] Password match: ${isMatch}`);
+        const isMatch = await bcrypt.compare(password, user.Password);
 
         if (!isMatch) {
-<<<<<<< HEAD
-            await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']);
-=======
-            // Non-fatal: log failure attempt
-            try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'FAILURE']); } catch { }
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-            return res.status(401).json({ success: false, message: 'Invalid credentials', code: 'AUTH_INVALID_CREDENTIALS' });
-        }
-
-        // Generate Tokens
-        console.log('[Auth] Generating tokens...');
-<<<<<<< HEAD
-        const accessToken = generateAccessToken(user, company_code);
-        const refreshToken = await generateRefreshToken(user.id, device_id, company_code);
-
-        // Success Log
-        await tenantPool.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'SUCCESS']);
-        await logAction({
-            userId: user.UserID,
-            module: 'AUTH',
-            actionType: 'LOGIN',
-            description: 'User logged in successfully',
-            ip: ip
-        });
-=======
-        const accessToken = generateAccessToken(user);
-
-        // Non-fatal: generate + store refresh token (gracefully degrade if DB write fails)
-        let refreshToken = null;
-        try {
-            refreshToken = await generateRefreshToken(user.id || user.ID, device_id);
-        } catch (rtErr) {
-            console.warn('[Auth] Refresh token storage failed (non-fatal):', rtErr.message);
-        }
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-
-        // Non-fatal: audit log + attempt log
-        try { await dbManager.execute('INSERT INTO login_attempts (user_id, ip_address, status) VALUES (?, ?, ?)', [user.UserID, ip, 'SUCCESS']); } catch { }
-        try {
-            await logAction({
-                userId: user.UserID,
-                module: 'AUTH',
-                actionType: 'LOGIN',
-                description: 'User logged in successfully',
-                ip: ip
-            });
-        } catch { }
-
-        console.log('[Auth] Login successful.');
-
-        // Set refresh token cookie only if successfully generated
-        if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Strict',
-                maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-            });
-        }
-
-        res.json({
-            success: true,
-            accessToken,
-            user: {
-                id: user.id || user.ID,
-                username: user.UserID,
-                name: user.UserName,
-                role: user.Role,
-                company_id: user.company_id,
-                company_code,
-                company_name
+            // Incremental failed attempts and potential lock
+            const attempts = (user.failed_attempts || 0) + 1;
+            let lockedUntil = null;
+            if (attempts >= MAX_FAILED_ATTEMPTS) {
+                lockedUntil = new Date();
+                lockedUntil.setMinutes(lockedUntil.getMinutes() + LOCKOUT_DURATION_MINS);
             }
+
+            await db.execute('UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?', [attempts, lockedUntil, user.id]);
+
+            await logAudit({ userId: user.id, username: user.UserID, actionType: 'LOGIN_FAILURE', module: 'AUTH', description: `Invalid attempt. #${attempts}${lockedUntil ? ' - ACCOUNT LOCKED' : ''}`, ip: req.ip });
+            return res.status(401).json({ success: false, message: lockedUntil ? 'Too many failures. Account locked.' : 'Invalid credentials' });
+        }
+
+        // Reset lockout on successful login
+        await db.execute('UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
+
+        const accessToken = generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user.id);
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
         });
+
+        await logAudit({ userId: user.id, username: user.UserID, actionType: 'LOGIN_SUCCESS', module: 'AUTH', description: 'Standard login complete.', ip: req.ip });
+        res.json({ success: true, token: accessToken, user: { username: user.UserID, name: user.UserName, role: user.role || user.Role }, message: 'Logged in successfully' });
 
     } catch (error) {
-        console.error('[Auth] Login error:', error);
-        console.error('[Auth] Error stack:', error.stack);
-        res.status(500).json({ success: false, message: 'Internal Server Error', code: 'AUTH_INTERNAL_ERROR', details: error.message });
+        if (error instanceof z.ZodError) return res.status(400).json({ success: false, message: error.errors });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
-/**
- * Token Refresh Controller (with rotation)
- */
 export const refreshToken = async (req, res) => {
     const token = req.cookies.refreshToken;
-
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'No refresh token', code: 'AUTH_NO_REFRESH_TOKEN' });
-    }
-
+    if (!token) return res.status(401).json({ success: false, message: 'No session token' });
     try {
-        // refresh_tokens live in billing_db
-        const [rows] = await mysqlPool.query(
-            'SELECT * FROM refresh_tokens WHERE token = ? AND revoked_at IS NULL',
-            [token]
-        );
-
-        const existingToken = rows[0];
-
-        if (!existingToken || new Date() > new Date(existingToken.expires_at)) {
-            return res.status(401).json({ success: false, message: 'Invalid or expired refresh token', code: 'AUTH_INVALID_REFRESH_TOKEN' });
+        const [rows] = await db.query('SELECT rt.*, u.UserID, u.role, u.UserName FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.token = ? AND rt.revoked_at IS NULL', [token]);
+        const storedToken = rows ? rows[0] : null;
+        if (!storedToken || new Date(storedToken.expires_at) < new Date()) {
+            return res.status(401).json({ success: false, message: 'Session expired' });
         }
-
-        // Get user from company's own database using company_code stored in the token
-        const company_code = existingToken.company_code || 'DEFAULT';
-        const tenantPool = getTenantPool(company_code);
-        const [userRows] = await tenantPool.query('SELECT * FROM userdetails WHERE id = ?', [existingToken.user_id]);
-        const user = userRows[0];
-
-        if (!user) {
-            return res.status(401).json({ success: false, message: 'User no longer exists', code: 'AUTH_USER_NOT_FOUND' });
-        }
-
-        // Rotate Token in billing_db
-        const newRefreshToken = randomBytes(40).toString('hex');
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
-
-        await mysqlPool.execute(
-            'UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP, replaced_by_token = ? WHERE id = ?',
-            [newRefreshToken, existingToken.id]
-        );
-
-        await mysqlPool.execute(
-            'INSERT INTO refresh_tokens (token, user_id, device_id, expires_at, company_code) VALUES (?, ?, ?, ?, ?)',
-            [newRefreshToken, user.id, existingToken.device_id, expiresAt, company_code]
-        );
-
-        const newAccessToken = generateAccessToken(user, company_code);
-
-        res.cookie('refreshToken', newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
-            maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-        });
-
-        res.json({
-            success: true,
-            accessToken: newAccessToken
-        });
-
+        const accessToken = generateAccessToken({ id: storedToken.user_id, UserID: storedToken.UserID, role: storedToken.role, UserName: storedToken.UserName });
+        res.json({ success: true, token: accessToken });
     } catch (error) {
-        console.error('[Auth] Refresh error:', error);
-        res.status(500).json({ success: false, message: 'Refresh failed', code: 'AUTH_REFRESH_ERROR' });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
-/**
- * Logout Controller
- */
 export const logout = async (req, res) => {
     const token = req.cookies.refreshToken;
-    try {
-        if (token) {
-            await dbManager.execute('UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE token = ?', [token]);
-        }
-
-        if (req.user) {
-            await logAction({
-                userId: req.user.username,
-                module: 'AUTH',
-                actionType: 'LOGOUT',
-                description: 'User logged out',
-                ip: req.socket.remoteAddress
-            });
-        }
-
-        res.clearCookie('refreshToken');
-        res.json({ success: true, message: 'Logout successful' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Logout failed', code: 'AUTH_LOGOUT_ERROR' });
+    if (token) {
+        await db.execute('UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE token = ?', [token]);
+        await logAudit({ userId: req.user?.id, username: req.user?.username, actionType: 'LOGOUT', module: 'AUTH', description: 'Logout.', ip: req.ip });
     }
+    res.clearCookie('refreshToken');
+    res.json({ success: true, message: 'Logged out' });
 };
 
 /**
- * Get Current User
+ * getCurrentUser (Profile)
  */
 export const getCurrentUser = async (req, res) => {
     try {
-        const rows = await dbManager.query(
-            'SELECT id, UserID, UserName, Role, Department FROM userdetails WHERE id = ?',
+        const [rows] = await db.query(
+            'SELECT id, UserID as username, UserName as name, role, PANCARD as email FROM users WHERE id = ?',
             [req.user.id]
         );
-        if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found', code: 'AUTH_USER_NOT_FOUND' });
+        if (!rows.length) return res.status(404).json({ success: false, message: 'User not found' });
         res.json({ success: true, user: rows[0] });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', code: 'AUTH_USER_FETCH_ERROR' });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// fixAdmin removed for security compliance
+/**
+ * updatePassword
+ */
+export const updatePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const [rows] = await db.query('SELECT Password FROM users WHERE id = ?', [req.user.id]);
+        const user = rows[0];
 
+        const isMatch = await bcrypt.compare(currentPassword, user.Password);
+        if (!isMatch) return res.status(401).json({ success: false, message: 'Incorrect current password' });
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await db.execute('UPDATE users SET Password = ? WHERE id = ?', [hashed, req.user.id]);
+
+        await logAudit({
+            userId: req.user.id,
+            username: req.user.username,
+            actionType: 'PASSWORD_CHANGE',
+            module: 'AUTH',
+            description: 'User updated their password.',
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

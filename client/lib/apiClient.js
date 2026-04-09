@@ -21,6 +21,20 @@ const DEDUP_WINDOW_MS = 300;        // Time window to deduplicate identical GETs
 const inflightGets = new Map();
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
+const getBaseUrl = () => {
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+        return 'http://127.0.0.1:5005/api';
+    }
+    return import.meta.env.VITE_API_URL || '/api';
+};
+
+const API_BASE_URL = getBaseUrl();
+
+export const getApiUrl = (path) => {
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${API_BASE_URL}${cleanPath}`;
+};
+
 const getToken = () => localStorage.getItem('token');
 
 const handleUnauthorized = () => {

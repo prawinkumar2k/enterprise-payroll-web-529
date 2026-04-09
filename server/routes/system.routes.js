@@ -103,11 +103,29 @@ router.get('/diagnostics/export', authenticate, async (req, res) => {
 // --- AUDIT INTEGRITY ---
 router.get('/audit/verify', authenticate, async (req, res) => {
     try {
+        if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ success: false, message: 'Access Denied: Administrative privileges required' });
+        }
         const report = await verifyAuditIntegrity();
         res.json({ success: true, ...report });
     } catch (error) {
         console.error('[Audit] verify error:', error.message);
-        res.json({ success: false, message: 'Integrity check failed' });
+        res.status(500).json({ success: false, message: 'Integrity check failed' });
+    }
+});
+
+// Full SHA256 Chain Verification (Enterprise Level)
+import { verifyCryptoAuditChain } from '../utils/auditLogger.js';
+router.get('/audit/verify-chain', authenticate, async (req, res) => {
+    try {
+        if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ success: false, message: 'Access Denied: Compliance audit requires higher clearance' });
+        }
+        const report = await verifyCryptoAuditChain();
+        res.json({ success: true, ...report });
+    } catch (error) {
+        console.error('[Audit] verify-chain error:', error.message);
+        res.status(500).json({ success: false, message: 'Cryptographic chain verification failed' });
     }
 });
 

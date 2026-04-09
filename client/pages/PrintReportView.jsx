@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useReducer } from 'react';
+import React, { useEffect, useMemo, useReducer } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     paginateData,
@@ -244,7 +244,7 @@ const PrintReportView = () => {
 };
 
 // HELPER: Selective Table Rendering 
-const ReportTableContent = ({ type, rows, pageIdx, rowsPerPage, totalPages, totalRecords, totals, filters }) => {
+const ReportTableContent = ({ type, rows, pageIdx, rowsPerPage, totalPages, totals, filters }) => {
     switch (type) {
         case 'PAY_BILL':
             // FORCED ORIENTATION & HARD WIDTHS (MANDATORY)

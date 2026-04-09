@@ -5,15 +5,15 @@ import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Only Admins can trigger sync operations
+// All authenticated users can read sync status
 router.use(authenticate);
-router.use(authorize('admin'));
-
-router.post('/push', pushSync);
-router.get('/pull', pullSync);
 router.get('/status', getSyncStatus);
-router.post('/status', updateSyncStatus);
 router.get('/logs', getSyncLogs);
-router.post('/reset', resetSyncStatus);
+
+// Only admins can trigger or modify sync operations
+router.post('/push', authorize('admin'), pushSync);
+router.get('/pull', authorize('admin'), pullSync);
+router.post('/status', authorize('admin'), updateSyncStatus);
+router.post('/reset', authorize('admin'), resetSyncStatus);
 
 export default router;

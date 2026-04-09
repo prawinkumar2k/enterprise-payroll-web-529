@@ -1,7 +1,6 @@
-
 import { useReducer, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSettings } from "../context/SettingsContext";
 import { useSync, SYNC_MODES } from "../context/SyncContext";
 import {
@@ -19,11 +18,16 @@ import {
   CloudOff,
   Database,
   AlertCircle,
-<<<<<<< HEAD
   LogOut,
   Building2,
   Shield,
   Wallet,
+  Sun,
+  Moon,
+  User,
+  BarChart3,
+  IndianRupee,
+  Clock,
 } from "lucide-react";
 
 function NavSidebar({
@@ -35,139 +39,10 @@ function NavSidebar({
   reportsOpen, setReportsOpen,
   attendanceOpen, setAttendanceOpen,
   financeOpen, setFinanceOpen,
+  monitoringOpen, setMonitoringOpen,
   activeRoute
 }) {
   return (
-=======
-  Sun,
-  Moon
-} from "lucide-react";
-
-
-export default function DashboardLayout({
-  children,
-  activeRoute = "dashboard",
-  userRole = "Admin",
-  disableContentWrapper = false
-}) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const effectiveRole = user.role || userRole;
-  const { isEnabled, settings, theme, toggleTheme } = useSettings();
-
-
-  const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync, error } = useSync();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [filesOpen, setFilesOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
-  const [attendanceOpen, setAttendanceOpen] = useState(false);
-  const [financeOpen, setFinanceOpen] = useState(false);
-
-  const [betaStatus, setBetaStatus] = useState(null);
-  const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/beta/status', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => setBetaStatus(data))
-      .catch(() => { });
-  }, []);
-
-  const handleExportDiagnostics = async () => {
-    setExporting(true);
-    try {
-      const res = await fetch('/api/beta/diagnostics/export', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`Diagnostic package exported to Desktop: ${data.fileName}`);
-      } else {
-        alert('Failed to export diagnostics: ' + data.message);
-      }
-    } catch (e) {
-      alert('Network error during diagnostic export.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // DYNAMIC MENU ITEMS GENERATOR
-  const adminMenuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
-    {
-      id: "files",
-      label: "FILES",
-      icon: FileText,
-      subItems: [
-        { id: "users", label: "User Details", href: "/users" },
-        { id: "audit-logs", label: "Log Details", href: "/audit-logs" }
-      ]
-    },
-    { id: "employees", label: "Employee Management", icon: Users, href: "/employees" },
-    { id: "salary", label: "Salary Processing", icon: Calculator, href: "/salary" },
-    {
-      id: "attendance",
-      label: "ATTENDANCE",
-      icon: Calendar,
-      feature: 'enable_attendance',
-      subItems: [
-        { id: "attendance-daily", label: "Daily Attendance", href: "/attendance/daily" },
-        { id: "attendance-monthly", label: "Monthly Attendance", href: "/attendance/monthly" },
-        { id: "attendance-reports", label: "Attendance Reports", href: "/attendance/reports" }
-      ]
-    },
-    {
-      id: "reports",
-      label: "REPORTS",
-      icon: ScrollText,
-      subItems: [
-        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
-        { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
-        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
-        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
-        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
-        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
-        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
-      ]
-    },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
-    { id: "license", label: "Licensing", icon: Database, href: "/license" },
-    { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" },
-    // ── Finance Module (Phase 2) ──
-    {
-      id: "finance",
-      label: "FINANCE",
-      icon: BarChart3,
-      subItems: [
-        { id: "income", label: "💵 Income", href: "/income" },
-        { id: "expense", label: "💸 Expenses", href: "/expense" },
-        { id: "finance-dashboard", label: "📊 Finance Dashboard", href: "/finance/dashboard" },
-      ]
-    },
-    { id: "salary-revisions", label: "Salary Revisions", icon: ScrollText, href: "/salary-revisions" },
-  ];
-
-  const employeeMenuItems = [
-    { id: "ess-dashboard", label: "ESS Home", icon: Home, href: "/employee/dashboard" },
-    { id: "my-payslips", label: "My Payslips", icon: Calculator, href: "/employee/dashboard" },
-    { id: "my-attendance", label: "My Attendance", icon: Calendar, href: "/employee/dashboard" },
-  ];
-
-  const menuItems = (effectiveRole?.toLowerCase() === 'employee') ? employeeMenuItems : adminMenuItems;
-
-
-
-
-  const NavContent = () => (
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
     <nav className="flex-1 px-4 py-6 overflow-y-auto">
       <ul className="space-y-2">
         {menuItems.map((item) => {
@@ -175,14 +50,19 @@ export default function DashboardLayout({
           const isActive = activeRoute === item.id || (item.subItems?.some(s => s.id === activeRoute));
 
           if (item.subItems) {
-            const isOpen = item.id === 'files' ? filesOpen : (item.id === 'reports' ? reportsOpen : (item.id === 'attendance' ? attendanceOpen : (item.id === 'finance' ? financeOpen : false)));
+            const isOpen = item.id === 'files' ? filesOpen :
+              (item.id === 'reports' ? reportsOpen :
+                (item.id === 'attendance' ? attendanceOpen :
+                  (item.id === 'finance' ? financeOpen : 
+                    (item.id === 'monitoring' ? monitoringOpen : false))));
+
             const toggleOpen = () => {
               if (item.id === 'files') setFilesOpen(!filesOpen);
               if (item.id === 'reports') setReportsOpen(!reportsOpen);
               if (item.id === 'attendance') setAttendanceOpen(!attendanceOpen);
               if (item.id === 'finance') setFinanceOpen(!financeOpen);
+              if (item.id === 'monitoring') setMonitoringOpen(!monitoringOpen);
             };
-
 
             return (
               <li key={item.id} className="space-y-1">
@@ -248,12 +128,14 @@ const initialLayoutState = {
   reportsOpen: false,
   attendanceOpen: false,
   financeOpen: false,
+  monitoringOpen: false,
   exporting: false,
 };
 
 function layoutReducer(state, action) {
   switch (action.type) {
     case 'SET': return { ...state, [action.field]: action.value };
+    case 'TOGGLE': return { ...state, [action.field]: !state[action.field] };
     default: return state;
   }
 }
@@ -262,21 +144,21 @@ export default function DashboardLayout({
   children,
   activeRoute = "dashboard"
 }) {
-  const { settings } = useSettings();
+  const { settings, theme, toggleTheme } = useSettings();
   const { mode, lastSync, isSyncing, progress, pendingCount, triggerManualSync } = useSync();
   const [state, dispatch] = useReducer(layoutReducer, initialLayoutState);
-  const navigate = useNavigate();
   const profileMenuRef = useRef(null);
 
   // Get user info from localStorage
   const storedUser = (() => {
     try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
   })();
+
   const currentUser = {
     username: storedUser.username || storedUser.UserID || 'User',
     name: storedUser.name || storedUser.UserName || storedUser.username || 'User',
-    role: storedUser.role || storedUser.Role || 'employee',
-    company_name: storedUser.company_name || storedUser.company_code || 'Company',
+    role: (storedUser.role || storedUser.Role || 'employee').toLowerCase(),
+    company_name: storedUser.company_name || storedUser.company_code || 'Enterprise',
     company_code: storedUser.company_code || '',
   };
 
@@ -294,7 +176,7 @@ export default function DashboardLayout({
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login');
+    window.location.href = '#/login';
   };
 
   const roleLabel = {
@@ -303,9 +185,11 @@ export default function DashboardLayout({
     accountant: 'Accountant',
     auditor: 'Auditor',
     employee: 'Employee',
+    company_admin: 'Company Admin',
     super_admin: 'Super Admin',
   }[currentUser.role] || currentUser.role;
-  const { sidebarOpen, mobileSidebarOpen, userMenuOpen, filesOpen, reportsOpen, attendanceOpen, financeOpen, exporting } = state;
+
+  const { sidebarOpen, mobileSidebarOpen, userMenuOpen, filesOpen, reportsOpen, attendanceOpen, financeOpen, monitoringOpen, exporting } = state;
 
   const { data: betaStatus } = useQuery({
     queryKey: ['beta-status'],
@@ -338,7 +222,7 @@ export default function DashboardLayout({
   };
 
   // DYNAMIC MENU ITEMS GENERATOR
-  const menuItems = [
+  const adminMenuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
     {
       id: "files",
@@ -367,22 +251,38 @@ export default function DashboardLayout({
       label: "REPORTS",
       icon: ScrollText,
       subItems: [
-        { id: "pay-bill-detail", label: settings.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
+        { id: "pay-bill-detail", label: settings?.title_pay_bill || "Pay Bill Detail", href: "/reports/pay-bill", feature: 'enable_pay_bill' },
         { id: "pay-bill-abstract", label: "Pay Bill Abstract", href: "/reports/pay-bill-abstract", feature: 'enable_pay_bill' },
-        { id: "bank-statement", label: settings.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
-        { id: "abstract-1", label: settings.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
-        { id: "abstract-2", label: settings.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
-        { id: "pay-certificate", label: settings.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
-        { id: "staff-report", label: settings.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
+        { id: "bank-statement", label: settings?.title_bank_statement || "Bank Statement", href: "/reports/bank-statement", feature: 'enable_bank_statement' },
+        { id: "abstract-1", label: settings?.title_abstract_1 || "Abstract 1", href: "/reports/abstract-1", feature: 'enable_abstract_1' },
+        { id: "abstract-2", label: settings?.title_abstract_2 || "Abstract 2", href: "/reports/abstract-2", feature: 'enable_abstract_2' },
+        { id: "pay-certificate", label: settings?.title_pay_certificate || "Pay Certificate", href: "/reports/pay-certificate", feature: 'enable_pay_certificate' },
+        { id: "staff-report", label: settings?.title_staff_report || "Staff Report", href: "/reports/staff-report", feature: 'enable_staff_report' }
       ]
     },
     {
       id: "finance",
       label: "FINANCE",
       icon: Wallet,
+      feature: 'enable_income',
       subItems: [
-        { id: "income",  label: "Income",  href: "/income",  feature: 'enable_income'  },
+        { id: "income", label: "Income", href: "/income", feature: 'enable_income' },
         { id: "expense", label: "Expense", href: "/expense", feature: 'enable_expense' },
+        { id: "finance-dashboard", label: "Finance Dashboard", href: "/finance/dashboard" },
+      ]
+    },
+    { id: "salary-revisions", label: "Salary Revisions", icon: BarChart3, href: "/salary-revisions" },
+    {
+      id: "monitoring",
+      label: "MONITORING",
+      icon: Shield,
+      subItems: [
+        { id: "mon-employees", label: "Employee List", href: "/company/employees" },
+        { id: "mon-attendance", label: "Real-time Attendance", href: "/company/attendance" },
+        { id: "mon-work", label: "Work Submissions", href: "/company/work" },
+        { id: "mon-salary", label: "Salary Estimates", href: "/company/salary" },
+        { id: "mon-leaves", label: "Leave Requests", href: "/company/leaves" },
+        { id: "mon-permissions", label: "Permission Requests", href: "/company/permissions" },
       ]
     },
     { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
@@ -390,19 +290,41 @@ export default function DashboardLayout({
     { id: "sync", label: "Sync Center", icon: RefreshCw, href: "/sync" }
   ];
 
+  const employeeMenuItems = [
+    { id: "ess-dashboard", label: "Command Center", icon: Home, href: "/employee/dashboard" },
+    { id: "my-attendance", label: "My History", icon: Clock, href: "/employee/attendance" },
+    { id: "my-leaves", label: "Leaves", icon: FileText, href: "/employee/leaves" },
+    { id: "my-permissions", label: "Permissions", icon: Shield, href: "/employee/permissions" },
+    { id: "my-work", label: "Work History", icon: ScrollText, href: "/employee/work" },
+    { id: "my-salary", label: "Salary", icon: IndianRupee, href: "/employee/salary" },
+    { id: "my-profile", label: "Profile", icon: User, href: "/employee/profile" },
+  ];
+
+  const isEmployee = currentUser.role === 'employee';
+  const menuItems = isEmployee ? employeeMenuItems : adminMenuItems;
+
+  const themeClasses = isEmployee 
+    ? "bg-emerald-50/10 [--sidebar-primary:#059669] [--sidebar-primary-foreground:#ffffff]" 
+    : "bg-indigo-50/10 [--sidebar-primary:#4f46e5] [--sidebar-primary-foreground:#ffffff]";
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative">
+    <div className={`flex h-screen bg-background overflow-hidden relative ${theme === 'dark' ? 'dark' : ''} ${themeClasses}`}>
       {/* 1. Desktop Sidebar */}
       <aside className={`bg-sidebar border-r border-sidebar-border flex flex-col h-full transition-all duration-300 flex-shrink-0 max-lg:hidden ${sidebarOpen ? "w-64" : "w-20"}`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border flex-shrink-0">
           {sidebarOpen ? (
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-sidebar-primary rounded flex items-center justify-center flex-shrink-0">
-                <span className="text-sidebar-primary-foreground font-bold">
+              <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${isEmployee ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
+                <span className="text-white font-bold">
                   {currentUser.company_name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <span className="font-bold text-sidebar-foreground truncate tracking-tight">{currentUser.company_name}</span>
+              <div className="flex flex-col">
+                <span className="font-bold text-sidebar-foreground truncate tracking-tight leading-none mb-1">{currentUser.company_name}</span>
+                <span className={`text-[8px] font-black uppercase tracking-widest ${isEmployee ? 'text-emerald-500' : 'text-indigo-500'}`}>
+                  {isEmployee ? 'Field Operations' : 'Management Portal'}
+                </span>
+              </div>
             </Link>
           ) : (
             <Link to="/" className="flex items-center justify-center w-full">
@@ -428,6 +350,8 @@ export default function DashboardLayout({
           setAttendanceOpen={(v) => dispatch({ type: 'SET', field: 'attendanceOpen', value: v })}
           financeOpen={financeOpen}
           setFinanceOpen={(v) => dispatch({ type: 'SET', field: 'financeOpen', value: v })}
+          monitoringOpen={monitoringOpen}
+          setMonitoringOpen={(v) => dispatch({ type: 'SET', field: 'monitoringOpen', value: v })}
           activeRoute={activeRoute}
         />
 
@@ -478,15 +402,11 @@ export default function DashboardLayout({
               <div className="flex flex-col gap-1 px-1 mb-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest">Product Status</span>
-                  {betaStatus?.license?.includes('Trial') ? (
-                    <span className="text-[9px] font-black text-orange-500 uppercase">Trial Mode</span>
-                  ) : (
-                    <span className="text-[9px] font-black text-green-500 uppercase">Full Access</span>
-                  )}
+                  <span className="text-[9px] font-black text-green-500 uppercase">Enterprise</span>
                 </div>
               </div>
               <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-black text-foreground/40 uppercase tracking-tighter text-center w-full">v1.0.0 Stable</span>
+                <span className="text-[10px] font-black text-foreground/40 uppercase tracking-tighter text-center w-full">v1.2.5 Premium</span>
               </div>
               <button
                 onClick={handleExportDiagnostics}
@@ -504,96 +424,27 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0 z-30">
           <div className="flex items-center gap-4">
-            <button onClick={() => dispatch({ type: 'SET', field: 'sidebarOpen', value: !sidebarOpen })} className="p-2 hover:bg-secondary rounded-lg transition">
+            <button onClick={() => dispatch({ type: 'TOGGLE', field: 'sidebarOpen' })} className="p-2 hover:bg-secondary rounded-lg transition max-lg:hidden">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-bold">Payroll Engine</h1>
-<<<<<<< HEAD
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Profile Dropdown */}
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                onClick={() => dispatch({ type: 'SET', field: 'userMenuOpen', value: !userMenuOpen })}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary-foreground font-bold text-sm">
-                    {currentUser.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="hidden sm:flex flex-col items-start leading-none">
-                  <span className="text-sm font-semibold text-foreground">{currentUser.name}</span>
-                  <span className="text-[10px] text-muted-foreground font-medium">{currentUser.company_name}</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
+            <button onClick={() => dispatch({ type: 'TOGGLE', field: 'mobileSidebarOpen' })} className="p-2 hover:bg-secondary rounded-lg transition lg:hidden">
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-black tracking-tight text-foreground uppercase hidden sm:block">
+              {isEmployee ? 'Field Operations' : 'Payroll Authority'}
+            </h1>
 
-              {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-                  {/* User Info Header */}
-                  <div className="px-4 py-3 bg-muted/30 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary-foreground font-bold">
-                          {currentUser.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-foreground truncate">{currentUser.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">@{currentUser.username}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Company & Role Info */}
-                  <div className="px-4 py-3 space-y-2 border-b border-border">
-                    <div className="flex items-center gap-2.5">
-                      <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Company</p>
-                        <p className="text-sm font-semibold text-foreground truncate">{currentUser.company_name}</p>
-                        {currentUser.company_code && (
-                          <p className="text-[10px] text-muted-foreground font-mono">{currentUser.company_code}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Role</p>
-                        <p className="text-sm font-semibold text-foreground">{roleLabel}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="p-2">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-=======
-
-            {/* DB Mode Badge — always visible in header */}
-            <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === SYNC_MODES.OFFLINE
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
-              : mode === 'DUAL'
-                ? 'bg-violet-500/10 border-violet-500/30 text-violet-500'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${isEmployee 
+               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' 
+               : mode === SYNC_MODES.OFFLINE
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
               }`}>
-              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${mode === SYNC_MODES.OFFLINE ? 'bg-amber-500' : mode === 'DUAL' ? 'bg-violet-500' : 'bg-emerald-500'
-                }`} />
-              {mode === SYNC_MODES.OFFLINE ? 'SQLite Only' : mode === 'DUAL' ? 'Dual DB' : 'Online'}
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isEmployee || mode !== SYNC_MODES.OFFLINE ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {isEmployee ? 'Mission Active' : (mode === SYNC_MODES.OFFLINE ? 'SQLite Only' : 'Cloud Connected')}
             </div>
           </div>
+
           <div className="flex items-center gap-4">
             <button
               onClick={toggleTheme}
@@ -602,53 +453,83 @@ export default function DashboardLayout({
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
-            <div className="relative">
+
+            <div className="relative" ref={profileMenuRef}>
               <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20"
+                onClick={() => dispatch({ type: 'TOGGLE', field: 'userMenuOpen' })}
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors group"
               >
-                <User className="w-4 h-4 text-primary" />
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+                  <User className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-none">
+                  <span className="text-sm font-bold text-foreground">{currentUser.name}</span>
+                  <span className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">{currentUser.company_name}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl p-2 z-[100] animate-in slide-in-from-top-2 duration-200">
-                  <div className="px-3 py-2 border-b border-border/50 mb-1">
-                    <p className="text-xs font-black text-foreground truncate uppercase tracking-tighter">{user.name || user.username || 'User'}</p>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{effectiveRole}</p>
+                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                  <div className="px-5 py-4 bg-muted/30 border-b border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-black text-foreground truncate uppercase tracking-tight">{currentUser.name}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium">@{currentUser.username}</p>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      localStorage.removeItem('user');
-                      window.location.href = '#/login';
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors text-xs font-bold uppercase tracking-wider"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    Sign Out
-                  </button>
+
+                  <div className="px-5 py-4 space-y-3.5 border-b border-border">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-none mb-1">Entity Authority</p>
+                        <p className="text-sm font-bold text-foreground truncate">{currentUser.company_name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-none mb-1">Access Protocol</p>
+                        <p className="text-sm font-bold text-foreground">{roleLabel}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors text-xs font-black uppercase tracking-widest"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      De-authenticate
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-
         </header>
 
         <main className="flex-1 w-full bg-background overflow-y-auto overflow-x-hidden relative px-4 sm:px-8 py-8">
           {betaStatus?.safeMode && (
-            <div className="bg-slate-800 text-white px-6 py-2 flex items-center justify-between sticky top-0 z-40 shadow-lg border-b border-primary/20">
+            <div className="mb-8 bg-slate-800 text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-b border-primary/20">
               <div className="flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-orange-400" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-tighter">System Recovery Engine Active</p>
-                  <p className="text-[10px] opacity-80 font-medium tracking-tight">System is operating in a restricted safe state. Background sync and intensive jobs are throttled.</p>
+                  <p className="text-xs font-black uppercase tracking-widest">System Recovery Engine Active</p>
+                  <p className="text-[10px] opacity-80 font-medium">System is operating in a restricted safe state. Background jobs are throttled.</p>
                 </div>
               </div>
               <button
                 onClick={handleExportDiagnostics}
-                className="bg-primary/20 hover:bg-primary/40 text-primary text-[10px] font-bold px-3 py-1 rounded-lg border border-primary/30 transition-all uppercase"
+                className="bg-primary/20 hover:bg-primary/40 text-primary text-[10px] font-black px-4 py-1.5 rounded-lg border border-primary/30 transition-all uppercase tracking-widest"
               >
-                Export System Logs
+                Export Logs
               </button>
             </div>
           )}
@@ -659,7 +540,7 @@ export default function DashboardLayout({
       {/* Sync Blocking Overlay */}
       {isSyncing && (
         <div className="fixed inset-0 bg-background/40 backdrop-blur-[4px] z-[9999] flex flex-col items-center justify-center cursor-wait transition-all duration-500">
-          <div className="bg-card/95 border border-border p-10 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col items-center gap-6 max-w-sm text-center border-t-primary/20 scale-100 animate-in fade-in zoom-in duration-300">
+          <div className="bg-card/95 border border-border p-10 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col items-center gap-6 max-w-sm text-center scale-100 animate-in fade-in zoom-in duration-300">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
               <RefreshCw className="w-16 h-16 text-primary animate-spin relative z-10" />
@@ -668,7 +549,7 @@ export default function DashboardLayout({
             <div className="space-y-2">
               <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Synchronizing</h3>
               <p className="text-sm text-muted-foreground font-medium px-4">
-                Pushing your local changes to the cloud authority. Please do not close the application.
+                Pushing local state to authority. Do not terminate process.
               </p>
             </div>
 

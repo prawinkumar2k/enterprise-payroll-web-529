@@ -1,48 +1,28 @@
-# ============================================
 # Stage 1: Build
-# ============================================
-FROM node:20-alpine AS builder
+FROM node:20-slim AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+COPY client/package*.json ./client/
 
-# Install dependencies
-RUN npm install && \
-    npm cache clean --force
+# Install client dependencies
+RUN npm install --workspace enterprise-payroll-client
 
-# Copy source code
-COPY . .
+COPY client/ ./client/
+RUN npm run build --workspace enterprise-payroll-client
 
-# Build production bundle
-RUN npm run build
+# Stage 2: Serve
+FROM nginx:alpine
 
-# ============================================
-# Stage 2: Production Serve
-# ============================================
-FROM nginx:1.25-alpine AS production
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Add custom config (needed for React SPA routing)
+COPY client/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built assets from builder stage
-COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
+COPY --from=build /app/client/dist /usr/share/nginx/html
 
-# Create cache and run directories with correct permissions
-RUN mkdir -p /var/cache/nginx /var/run && \
-    chown -R nginx:nginx /var/cache/nginx /var/run /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
+EXPOSE 80
 
-# Switch to non-root user
-USER nginx
-
-# Expose port
-EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

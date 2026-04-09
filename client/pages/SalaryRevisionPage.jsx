@@ -10,6 +10,10 @@ const STATUS_STYLE = {
     APPROVED: { bg: '#dcfce7', color: '#15803d' },
     REJECTED: { bg: '#fee2e2', color: '#dc2626' },
 };
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
+});
 
 export default function SalaryRevisionPage() {
     const [pending, setPending] = useState([]);
@@ -22,22 +26,22 @@ export default function SalaryRevisionPage() {
     const [error, setError] = useState('');
     const [rejReason, setRejReason] = useState('');
 
-    const token = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-    const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
-
     const loadPending = useCallback(async () => {
         setLoading(true);
-        const res = await fetch(API('/salary-revisions/pending'), { headers: headers() });
+        const res = await fetch(API('/salary-revisions/pending'), { headers: getAuthHeaders() });
         const d = await res.json();
         if (d.success) setPending(d.data || []);
         setLoading(false);
     }, []);
 
-    useEffect(() => { loadPending(); }, [loadPending]);
+    useEffect(() => {
+        const timer = setTimeout(() => { void loadPending(); }, 0);
+        return () => clearTimeout(timer);
+    }, [loadPending]);
 
     const searchEmployee = async () => {
         if (!searchEmp.trim()) return;
-        const res = await fetch(API(`/salary-revisions/${searchEmp.trim()}`), { headers: headers() });
+        const res = await fetch(API(`/salary-revisions/${searchEmp.trim()}`), { headers: getAuthHeaders() });
         const d = await res.json();
         if (d.success) setEmpRevisions(d.data || []);
     };
@@ -59,7 +63,7 @@ export default function SalaryRevisionPage() {
         if (!form.empno || !form.effective_from || !form.basic) { setError('Employee No, Effective Date and Basic are required.'); return; }
         setSaving(true); setError('');
         try {
-            const res = await fetch(API('/salary-revisions'), { method: 'POST', headers: headers(), body: JSON.stringify(form) });
+            const res = await fetch(API('/salary-revisions'), { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(form) });
             const d = await res.json();
             if (d.success) { closeModal(); loadPending(); }
             else setError(d.message || 'Failed to create revision.');
@@ -68,13 +72,13 @@ export default function SalaryRevisionPage() {
     };
 
     const approve = async (id) => {
-        await fetch(API(`/salary-revisions/${id}/approve`), { method: 'PUT', headers: headers(), body: JSON.stringify({}) });
+        await fetch(API(`/salary-revisions/${id}/approve`), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({}) });
         closeModal(); loadPending();
     };
 
     const reject = async (id) => {
         if (!rejReason) { setError('Rejection reason is required.'); return; }
-        await fetch(API(`/salary-revisions/${id}/reject`), { method: 'PUT', headers: headers(), body: JSON.stringify({ rejection_reason: rejReason }) });
+        await fetch(API(`/salary-revisions/${id}/reject`), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ rejection_reason: rejReason }) });
         closeModal(); loadPending();
     };
 

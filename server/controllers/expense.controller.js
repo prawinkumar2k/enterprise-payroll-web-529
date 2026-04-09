@@ -303,15 +303,21 @@ export const getFinanceDashboard = async (req, res) => {
              FROM emppay WHERE MONTHYEAR = ? AND deleted_at IS NULL`, [monthYear]
         );
 
-        // Monthly trend (last 6 months)
         const months = [];
+        const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
         for (let i = 5; i >= 0; i--) {
             const d = new Date(parseInt(qYear), parseInt(qMonth) - 1 - i, 1);
-            const my = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-            months.push(my);
+            const monNum = String(d.getMonth() + 1).padStart(2, '0');
+            const fyr = d.getFullYear();
+            const monName = monthNames[d.getMonth()];
+
+            const my = `${monNum}-${fyr}`;
+            const payrollFormats = [my, `${monName} ${fyr}`, `${monName}-${fyr}`, `${fyr}-${monNum}`];
+            months.push({ my, payrollFormats });
         }
 
-        const trendData = await Promise.all(months.map(async (my) => {
+        const trendData = await Promise.all(months.map(async ({ my, payrollFormats }) => {
             const [inc] = await dbManager.query(
                 `SELECT SUM(amount) as t FROM income_entries WHERE month_year = ? AND is_deleted = 0`, [my]
             );
@@ -319,14 +325,17 @@ export const getFinanceDashboard = async (req, res) => {
                 `SELECT SUM(amount) as t FROM expense_entries WHERE month_year = ? AND is_deleted = 0 AND approval_status = 'APPROVED'`, [my]
             );
             const [pay] = await dbManager.query(
-                `SELECT SUM(CAST(NETSAL AS DECIMAL(15,2))) as t FROM emppay WHERE MONTHYEAR = ? AND deleted_at IS NULL`, [my]
+                `SELECT SUM(CAST(NETSAL AS DECIMAL(15,2))) as t FROM emppay WHERE MONTHYEAR IN (?) AND deleted_at IS NULL`, [payrollFormats]
             );
             return { month: my, income: inc?.[0]?.t || 0, expense: exp?.[0]?.t || 0, payroll: pay?.[0]?.t || 0 };
         }));
 
-        const totalIncome = incomeRows?.[0]?.total || 0;
-        const totalExpense = (expenseRows?.[0]?.total || 0) + (payrollRows?.[0]?.total || 0);
-        const payrollCost = payrollRows?.[0]?.total || 0;
+        const currentMonthData = trendData[trendData.length - 1];
+        const totalIncome = currentMonthData.income;
+        const payrollCost = currentMonthData.payroll;
+        const expenseTotal = currentMonthData.expense;
+        const totalExpense = expenseTotal + payrollCost;
+
 
         const data = {
             monthYear,

@@ -10,6 +10,10 @@ const STATUS_COLORS = {
     APPROVED: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', dot: 'bg-emerald-500' },
     REJECTED: { bg: 'bg-red-500/10', text: 'text-red-600', dot: 'bg-red-500' }
 };
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
+});
 
 export default function ExpensePage() {
     const [entries, setEntries] = useState([]);
@@ -18,17 +22,13 @@ export default function ExpensePage() {
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState({ ...nowMY(), search: '', category: '', status: '' });
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [total, setTotal] = useState(0);
+    const [_totalPages, setTotalPages] = useState(1);
     const [modal, setModal] = useState({ open: false, entry: null, mode: 'form' });
     const [form, setForm] = useState({});
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [approvalEntry, setApprovalEntry] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
-
-    const token = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-    const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -37,12 +37,12 @@ export default function ExpensePage() {
             if (filter.search) q.set('search', filter.search);
             if (filter.category) q.set('category', filter.category);
             if (filter.status) q.set('status', filter.status);
-            const res = await fetch(API(`/expense?${q}`), { headers: headers() });
+            const res = await fetch(API(`/expense?${q}`), { headers: getAuthHeaders() });
             const data = await res.json();
-            if (data.success) { setEntries(data.data || []); setTotal(data.total || 0); setTotalPages(data.totalPages || 1); }
+            if (data.success) { setEntries(data.data || []); setTotalPages(data.totalPages || 1); }
 
             const my = `${filter.month}-${filter.year}`;
-            const sumRes = await fetch(API(`/expense/summary/${my}`), { headers: headers() });
+            const sumRes = await fetch(API(`/expense/summary/${my}`), { headers: getAuthHeaders() });
             const sumData = await sumRes.json();
             if (sumData.success) setSummary(sumData);
         } catch (e) { console.error(e); }
@@ -50,13 +50,19 @@ export default function ExpensePage() {
     }, [filter, page]);
 
     const loadCats = useCallback(async () => {
-        const res = await fetch(API('/expense/categories'), { headers: headers() });
+        const res = await fetch(API('/expense/categories'), { headers: getAuthHeaders() });
         const d = await res.json();
         if (d.success) setCategories(d.data || []);
     }, []);
 
-    useEffect(() => { loadCats(); }, []);
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        const timer = setTimeout(() => { void loadCats(); }, 0);
+        return () => clearTimeout(timer);
+    }, [loadCats]);
+    useEffect(() => {
+        const timer = setTimeout(() => { void load(); }, 0);
+        return () => clearTimeout(timer);
+    }, [load]);
 
     const openAdd = () => {
         setForm({ expense_date: new Date().toISOString().split('T')[0], payment_mode: 'BANK', currency: 'INR' });
@@ -74,7 +80,7 @@ export default function ExpensePage() {
         try {
             const url = modal.entry ? API(`/expense/${modal.entry.id}`) : API('/expense');
             const method = modal.entry ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(form) });
+            const res = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(form) });
             const d = await res.json();
             if (d.success) { closeModal(); load(); } else setError(d.message || 'Save failed.');
         } catch (e) { setError(e.message); }
@@ -82,13 +88,13 @@ export default function ExpensePage() {
     };
 
     const doApprove = async (id) => {
-        await fetch(API(`/expense/${id}/approve`), { method: 'PUT', headers: headers(), body: JSON.stringify({ remark: '' }) });
+        await fetch(API(`/expense/${id}/approve`), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ remark: '' }) });
         setApprovalEntry(null); load();
     };
 
     const doReject = async (id) => {
         if (!rejectionReason) { alert('Please enter a rejection reason.'); return; }
-        await fetch(API(`/expense/${id}/reject`), { method: 'PUT', headers: headers(), body: JSON.stringify({ rejection_reason: rejectionReason }) });
+        await fetch(API(`/expense/${id}/reject`), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ rejection_reason: rejectionReason }) });
         setApprovalEntry(null); setRejectionReason(''); load();
     };
 
@@ -204,7 +210,7 @@ export default function ExpensePage() {
                                     <tr><td colSpan={9} className="p-20 text-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse font-mono">Loading Ledgers...</td></tr>
                                 ) : entries.length === 0 ? (
                                     <tr><td colSpan={9} className="p-20 text-center text-muted-foreground italic font-medium">No expense records located.</td></tr>
-                                ) : entries.map((e, i) => {
+                                ) : entries.map((e) => {
                                     const { bg, text } = STATUS_COLORS[e.approval_status] || { bg: 'bg-muted', text: 'text-muted-foreground' };
                                     return (
                                         <tr key={e.id} className="hover:bg-muted/20 transition-colors group">

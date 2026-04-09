@@ -1,121 +1,118 @@
-/**
- * cache.service.js — In-Memory Cache Layer
- *
- * Zero-dependency, production-safe TTL cache.
- * Replaces repeated DB hits for dashboard KPIs, monthly summaries,
- * and employee lists with sub-millisecond in-memory responses.
- *
- * Usage:
- *   import cache from './cache.service.js';
- *   const data = cache.get('dashboard:kpis:02-2026');
- *   cache.set('dashboard:kpis:02-2026', data, cache.TTL.DASHBOARD);
- *   cache.invalidate('dashboard:');  // flush all dashboard keys
- */
+import Redis from 'ioredis';
 
 // ─── TTL Constants (milliseconds) ────────────────────────────────────────────
 export const TTL = {
-    DASHBOARD: 60_000,    //  1 minute  — KPIs & payroll summaries
-    SUMMARY: 300_000,    //  5 minutes — monthly attendance summaries
-    EMPLOYEES: 120_000,    //  2 minutes — employee list
-    REPORTS: 600_000,    // 10 minutes — generated reports
-    SETTINGS: 300_000,    //  5 minutes — app settings
-    SHORT: 30_000,    // 30 seconds — rapidly changing data
+    DASHBOARD: 60,    // 1 minute (Seconds for Redis)
+    SUMMARY: 300,    // 5 minutes
+    EMPLOYEES: 120,    // 2 minutes
+    REPORTS: 600,    // 10 minutes
+    SETTINGS: 300,    // 5 minutes
+    SHORT: 30,    // 30 seconds
 };
 
 // ─── Internal Store ───────────────────────────────────────────────────────────
-const store = new Map();
+const memStore = new Map();
+let redis = null;
+
+if (process.env.REDIS_URL) {
+    try {
+        redis = new Redis(process.env.REDIS_URL, {
+            maxRetriesPerRequest: 1,
+            retryStrategy: () => null // Disable retry for failover to memory
+        });
+        redis.on('error', (err) => {
+            console.warn('[Cache] Redis Error — Falling back to Memory');
+            redis = null;
+        });
+        console.log('[Cache] Distributed Redis initialized.');
+    } catch (e) {
+        console.warn('[Cache] Redis initialization failed — using local memory only.');
+    }
+}
+
 let _hits = 0;
 let _misses = 0;
 
-// ─── Auto-cleanup: sweep expired entries every 5 minutes ─────────────────────
+// ─── Auto-cleanup (Memory only) ─────────────────────
 setInterval(() => {
+    if (redis) return;
     const now = Date.now();
-    let cleaned = 0;
-    for (const [key, entry] of store.entries()) {
-        if (now > entry.expiresAt) { store.delete(key); cleaned++; }
+    for (const [key, entry] of memStore.entries()) {
+        if (now > entry.expiresAt) { memStore.delete(key); }
     }
-    if (cleaned > 0) console.log(`[Cache] Swept ${cleaned} expired entries. Size: ${store.size}`);
 }, 300_000);
 
-// ─── Core API ─────────────────────────────────────────────────────────────────
-
 /**
- * Get a cached value. Returns null on miss or expiry.
+ * Get a cached value.
  */
-export function get(key) {
-    const entry = store.get(key);
+export async function get(key) {
+    if (redis) {
+        try {
+            const data = await redis.get(key);
+            if (data) { _hits++; return JSON.parse(data); }
+        } catch (e) { redis = null; } // Fallback on error
+    }
+
+    const entry = memStore.get(key);
     if (!entry) { _misses++; return null; }
-    if (Date.now() > entry.expiresAt) { store.delete(key); _misses++; return null; }
+    if (Date.now() > entry.expiresAt) { memStore.delete(key); _misses++; return null; }
     _hits++;
     return entry.data;
 }
 
 /**
  * Set a value with a TTL.
- * @param {string} key
- * @param {*} data
- * @param {number} ttl  milliseconds (use TTL constants above)
  */
-export function set(key, data, ttl = TTL.DASHBOARD) {
-    store.set(key, { data, expiresAt: Date.now() + ttl });
+export async function set(key, data, ttlSeconds = TTL.DASHBOARD) {
+    if (redis) {
+        try {
+            await redis.set(key, JSON.stringify(data), 'EX', ttlSeconds);
+            return;
+        } catch (e) { redis = null; }
+    }
+    memStore.set(key, { data, expiresAt: Date.now() + (ttlSeconds * 1000) });
 }
 
 /**
- * Delete all cache entries whose key starts with a given prefix.
- * e.g. invalidate('dashboard:') clears all dashboard keys.
+ * Invalidate by prefix.
  */
-export function invalidate(prefix) {
-    let count = 0;
-    for (const key of store.keys()) {
-        if (key.startsWith(prefix)) { store.delete(key); count++; }
+export async function invalidate(prefix) {
+    if (redis) {
+        try {
+            const keys = await redis.keys(prefix + '*');
+            if (keys.length) await redis.del(...keys);
+            return keys.length;
+        } catch (e) { redis = null; }
     }
-    if (count > 0) console.log(`[Cache] Invalidated ${count} keys matching "${prefix}*"`);
+
+    let count = 0;
+    for (const key of memStore.keys()) {
+        if (key.startsWith(prefix)) { memStore.delete(key); count++; }
+    }
     return count;
 }
 
 /**
- * Delete a single key.
- */
-export function del(key) {
-    return store.delete(key);
-}
-
-/**
- * Clear everything.
- */
-export function flush() {
-    const size = store.size;
-    store.clear();
-    console.log(`[Cache] Flushed all ${size} entries.`);
-}
-
-/**
- * Cache stats for /api/health endpoint.
+ * Cache stats.
  */
 export function stats() {
-    const total = _hits + _misses;
     return {
-        size: store.size,
+        mode: redis ? 'Redis (Distributed)' : 'In-Memory (Local)',
         hits: _hits,
         misses: _misses,
-        hitRate: total > 0 ? `${(((_hits / total) * 100)).toFixed(1)}%` : 'N/A',
     };
 }
 
 /**
- * Wrap an async function with cache.
- * If cached → return immediately.
- * If not → call fn(), cache the result, return it.
- *
- * @example
- * const data = await cache.wrap('key', TTL.DASHBOARD, () => dbManager.query(...));
+ * Wrap logic.
  */
 export async function wrap(key, ttl, fn) {
-    const cached = get(key);
+    const cached = await get(key);
     if (cached !== null) return cached;
     const data = await fn();
-    set(key, data, ttl);
+    await set(key, data, ttl);
     return data;
 }
 
-export default { get, set, invalidate, del, flush, stats, wrap, TTL };
+export default { get, set, invalidate, stats, wrap, TTL };
+

@@ -589,6 +589,67 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- ── shift_definitions ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `shift_definitions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `shift_name` varchar(50) NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `grace_period_mins` int DEFAULT '15',
+  `is_night_shift` tinyint(1) DEFAULT '0',
+  `color_code` varchar(7) DEFAULT '#3b82f6',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ── employee_shifts ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `employee_shifts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `emp_no` varchar(50) NOT NULL,
+  `shift_id` int NOT NULL,
+  `effective_date` date NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_shift_emp` (`emp_no`,`effective_date`),
+  CONSTRAINT `fk_shift_def` FOREIGN KEY (`shift_id`) REFERENCES `shift_definitions` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ── leave_types ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `leave_types` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `type_name` varchar(50) NOT NULL,
+  `yearly_limit` int DEFAULT '12',
+  `is_paid` tinyint(1) DEFAULT '1',
+  `color_code` varchar(7) DEFAULT '#3b82f6',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_leave_type_name` (`type_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ── leave_requests ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `leave_requests` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `uuid` char(36) NOT NULL,
+  `emp_no` varchar(50) NOT NULL,
+  `leave_type_id` int NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `total_days` decimal(5,1) NOT NULL,
+  `reason` text,
+  `status` enum('PENDING','APPROVED','REJECTED','CANCELLED') DEFAULT 'PENDING',
+  `approved_by` varchar(50) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_leave_request_uuid` (`uuid`),
+  KEY `idx_leave_emp` (`emp_no`,`status`),
+  KEY `idx_leave_dates` (`start_date`,`end_date`),
+  CONSTRAINT `fk_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_types` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 -- ── refresh_tokens ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `refresh_tokens` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -598,6 +659,11 @@ CREATE TABLE IF NOT EXISTS `refresh_tokens` (
   `expires_at` datetime NOT NULL,
   `company_code` varchar(50) DEFAULT 'DEFAULT',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `replaced_by_token` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_rt_token` (`token`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `revoked_at` datetime DEFAULT NULL,
   `replaced_by_token` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -638,3 +704,81 @@ CREATE TABLE IF NOT EXISTS `schema_versions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Added for Employee Portal
+CREATE TABLE IF NOT EXISTS employee_attendance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    company_id INT NOT NULL,
+    punch_in_time DATETIME NOT NULL,
+    punch_out_time DATETIME,
+    in_selfie_url TEXT,
+    out_selfie_url TEXT,
+    in_lat DECIMAL(10, 8),
+    in_lng DECIMAL(11, 8),
+    out_lat DECIMAL(10, 8),
+    out_lng DECIMAL(11, 8),
+    is_remote BOOLEAN DEFAULT FALSE,
+    status ENUM('PRESENT', 'HALF_DAY', 'ABSENT', 'ON_LEAVE', 'PENDING') DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS work_submissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attendance_id INT NOT NULL,
+    employee_id INT NOT NULL,
+    company_id INT NOT NULL,
+    description TEXT,
+    file_path TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS employee_leaves (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    company_id INT NOT NULL,
+    leave_type VARCHAR(50) NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    reason TEXT,
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+    selfie_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS employee_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    company_id INT NOT NULL,
+    permission_type VARCHAR(50) NOT NULL,
+    date DATE NOT NULL,
+    from_time TIME NOT NULL,
+    to_time TIME NOT NULL,
+    reason TEXT,
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+    selfie_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS att_monthly_summary (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    empno         VARCHAR(50) NOT NULL,
+    empname       VARCHAR(200),
+    designation   VARCHAR(200),
+    category      VARCHAR(100),
+    summary_month VARCHAR(7) NOT NULL,
+    total_days    INT DEFAULT 0,
+    present_days  INT DEFAULT 0,
+    absent_days   INT DEFAULT 0,
+    lop_days      DECIMAL(5,1) DEFAULT 0,
+    leave_days    INT DEFAULT 0,
+    half_days     INT DEFAULT 0,
+    weekoff_days  INT DEFAULT 0,
+    od_days       INT DEFAULT 0,
+    working_hrs   DECIMAL(8,2) DEFAULT 0,
+    updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_emp_month (empno, summary_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

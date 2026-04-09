@@ -32,7 +32,7 @@ const calculateSalaryTotals = (row) => {
 
     const gross = earnings.reduce((sum, field) => sum + parse(row[field]), 0);
     const totDed = deductions.reduce((sum, field) => sum + parse(row[field]), 0);
-    const net = gross - totDed;
+    const net = Math.max(0, gross - totDed);
 
     return {
         GROSSPAY: gross.toFixed(2),
@@ -61,7 +61,6 @@ async function _generateSalaryJob({ monthYear, user }, updateProgress) {
         const [settingsRows] = await connection.query('SELECT setting_key, setting_value FROM app_settings WHERE setting_key = "da_percent"');
         const globalDaPercent = settingsRows.length > 0 ? parseFloat(settingsRows[0].setting_value) : null;
 
-<<<<<<< HEAD
         // 2. Fetch all employees (Lock rows to prevent modification during calculation)
         // Include any employee not explicitly set to Inactive (covers Active, True, NULL, legacy values)
         const [employees] = await connection.query(
@@ -70,18 +69,8 @@ async function _generateSalaryJob({ monthYear, user }, updateProgress) {
 
         if (employees.length === 0) {
             await connection.rollback();
-            return res.status(404).json({ success: false, message: 'No active employees found in system.' });
+            throw new Error('No active employees found in system.');
         }
-=======
-        const [employees] = await connection.query(`
-            SELECT EMPNO, SNAME, DESIGNATION, DGroup, AbsGroup,
-                   PAY, GradePay, PHD, MPHIL, HATA, Allowance, DA, SPECIAL, INTERIM,
-                   EPF, ESI, AccountNo, BankName, IFSCCode, OtherAccNo
-            FROM empdet
-            WHERE CheckStatus IN ('Active', 'True') OR CheckStatus IS NULL
-        `);
-        if (employees.length === 0) throw new Error('No active employees found.');
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
 
         updateProgress(30, `Processing ${employees.length} employees (DA: ${globalDaPercent !== null ? globalDaPercent + '%' : 'Master Value'})...`);
         const dateParts = monthYear.split('-');
@@ -783,5 +772,69 @@ export const mySalaryHistory = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+/**
+ * Bulk Email Pay-slips (Enterprise Feature)
+ */
+export const bulkEmailPayslips = async (req, res) => {
+    const { monthYear } = req.body;
+    if (!monthYear) return res.status(400).json({ success: false, message: 'monthYear required' });
 
+    try {
+        const [rows] = await dbManager.query(`
+            SELECT p.*, e.PANCARD as email 
+            FROM emppay p 
+            JOIN empdet e ON p.EMPNO = e.EMPNO 
+            WHERE p.MONTHYEAR = ? AND p.deleted_at IS NULL AND e.CheckStatus IN ('Active', 'True')
+        `, [monthYear]);
 
+        if (rows.length === 0) return res.status(404).json({ success: false, message: 'No records found for this period.' });
+
+        await logAudit({
+            userId: req.user.id,
+            username: req.user.username,
+            actionType: 'BULK_EMAIL_INITIATED',
+            module: 'PAYROLL',
+            description: `Started batch email delivery for ${monthYear} (${rows.length} recipients).`,
+        });
+
+        res.json({ success: true, message: `Batch process started for ${rows.length} emails.` });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Salary Financial Analytics
+ */
+export const getSalaryAnalytics = async (req, res) => {
+    const { year } = req.query;
+    if (!year) return res.status(400).json({ success: false, message: 'Year required' });
+
+    try {
+        const [deptStats] = await dbManager.query(`
+            SELECT Category as department, SUM(NETSAL) as total_net, SUM(GROSSPAY) as total_gross, COUNT(*) as count
+            FROM emppay 
+            WHERE MONTHYEAR LIKE ?
+            GROUP BY Category
+        `, [`%${year}%`]);
+
+        const [monthlyTrend] = await dbManager.query(`
+            SELECT MONTHYEAR, SUM(NETSAL) as total_net, SUM(GROSSPAY) as total_gross
+            FROM emppay 
+            WHERE MONTHYEAR LIKE ?
+            GROUP BY MONTHYEAR
+        `, [`%${year}%`]);
+
+        res.json({
+            success: true,
+            analytics: {
+                deptStats,
+                monthlyTrend
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

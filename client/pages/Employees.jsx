@@ -1,8 +1,8 @@
-import { useReducer, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import Pagination from "@/components/Pagination";
-import { Search, Plus, Trash2, RefreshCw, X, Save, ArrowUpDown, AlertCircle, Download, Upload, FileSpreadsheet } from "lucide-react";
-import { getApiUrl } from "../lib/api";
+import { Search, Plus, Trash2, RefreshCw, X, Save, ArrowUpDown, AlertCircle, Download, Upload, FileSpreadsheet, ChevronDown, ChevronUp } from "lucide-react";
+import { getApiUrl } from "../lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 
@@ -16,8 +16,6 @@ const ALL_FIELDS = [
 
 // Table: exclude internal 'id' column so EMPNO/SNAME are first visible columns
 const TABLE_FIELDS = ALL_FIELDS.filter(f => f !== 'id');
-const FORM_FIELDS = ALL_FIELDS;
-
 // Sticky-left columns: always visible when scrolling horizontally
 const STICKY_LEFT = {
   EMPNO: { left: '0px',    minWidth: '100px' },
@@ -32,10 +30,53 @@ const _initEmp = {
 };
 const _empReducer = (s, { field, value }) => ({ ...s, [field]: value });
 
+
+
 export default function Employees() {
+
   const [empState, dispatch] = useReducer(_empReducer, _initEmp);
   const { employees, loading, viewTrash, searchTerm, modalOpen, currentEmployee, sortConfig, errorState, importData, showImportPreview, currentPage } = empState;
   const set = (field, value) => dispatch({ field, value });
+
+  /**
+   * Collapsible advanced fields — leave quotas, extra dates, PAN, etc.
+   * Hidden by default so the form feels clean for typical new-employee entry.
+   */
+  const AdvancedSection = ({ currentEmployee }) => {
+    const [open, setOpen] = useState(false);
+    const ADVANCED = [
+      { f: 'PANCARD',    l: 'PAN Card No.' }, { f: 'OtherAccNo', l: 'Other Acc. No.' },
+      { f: 'MPHIL',      l: 'M.Phil ₹' },    { f: 'PHD',        l: 'Ph.D ₹' },
+      { f: 'RDATE',      l: 'Retirement Date', t: 'date' }, { f: 'LDATE', l: 'Leaving Date', t: 'date' },
+      { f: 'OD',  l: 'OD Leave' }, { f: 'CL', l: 'CL Leave' }, { f: 'ML', l: 'ML Leave' }, { f: 'MaL', l: 'MaL Leave' },
+      { f: 'RH',  l: 'RH Leave' }, { f: 'SL', l: 'SL Leave' }, { f: 'LOP', l: 'LOP Days' }, { f: 'LopDate', l: 'LOP Date', t: 'date' },
+    ];
+    return (
+      <div className="border border-dashed border-gray-200 rounded-xl overflow-hidden">
+        <button type="button" onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left">
+          <span className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center text-[10px] font-black">4</span>
+            Advanced Fields
+            <span className="text-gray-400 font-normal normal-case">(PAN, Leave Quotas, Extra Dates)</span>
+          </span>
+          {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
+        {open && (
+          <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white">
+            {ADVANCED.map(({ f, l, t }) => (
+              <div key={f}>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">{l}</label>
+                <input name={f} defaultValue={currentEmployee?.[f] || ''} type={t || 'text'} placeholder={t ? '' : '0'}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const fileInputRef = useRef(null);
   const { toast } = useToast();
   const PAGE_SIZE = 100;
@@ -59,12 +100,9 @@ export default function Employees() {
       }
 
       const data = await response.json();
-      if (Array.isArray(data)) {
-        set('employees', data);
-      } else {
-        console.error("Data is not array:", data);
-        set('employees', []);
-      }
+      // Handle both { success: true, data: [] } envelope and legacy raw array
+      const rows = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      set('employees', rows);
     } catch (error) {
       console.error("Fetch error:", error);
       set('errorState', error.message);
@@ -557,60 +595,112 @@ export default function Employees() {
 
       {/* Create/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-              <h2 className="text-xl font-bold text-gray-800">
-                {currentEmployee?.id ? "Edit Employee Record" : "New Employee Entry"}
-              </h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[92vh]">
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-700 to-blue-600 rounded-t-xl">
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  {currentEmployee?.id ? "Edit Employee" : "New Employee"}
+                </h2>
+                <p className="text-blue-200 text-xs mt-0.5">
+                  {currentEmployee?.id ? `Editing: ${currentEmployee.EMPNO} — ${currentEmployee.SNAME}` : "Fill in the required details below"}
+                </p>
+              </div>
               <button
                 onClick={() => set('modalOpen', false)}
-                className="p-1 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
+                className="p-1.5 hover:bg-white/20 rounded-full text-white transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="flex flex-col flex-grow overflow-hidden">
-              <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {FORM_FIELDS.filter(field => field !== 'id' || currentEmployee?.id).map(field => (
-                  <div key={field} className="flex flex-col space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{field}</label>
-                    {field === 'CheckStatus' ? (
-                      <select
-                        name={field}
-                        defaultValue={currentEmployee?.[field] || 'Active'}
-                        className="border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    ) : (
-                      <input
-                        name={field}
-                        defaultValue={currentEmployee?.[field] || ""}
-                        readOnly={field === 'id'}
-                        className={`border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all ${field === 'id' ? 'bg-gray-100' : ''}`}
-                        type={['DOB', 'JDATE', 'RDATE', 'LDATE', 'LopDate'].includes(field) ? "date" : "text"}
-                      />
-                    )}
+              <div className="p-6 overflow-y-auto flex-grow space-y-6">
+
+                {/* ── SECTION 1: Identity ─────────────────────────── */}
+                <div>
+                  <h3 className="text-xs font-black text-blue-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                    Employee Identity
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[{f:'SLNO',l:'Sl No.',r:false},{f:'EMPNO',l:'Employee ID *',r:!currentEmployee?.id},{f:'SNAME',l:'Full Name *',r:false,span:2},{f:'DESIGNATION',l:'Designation *',r:false},{f:'DGroup',l:'Dept. Group',r:false},{f:'AbsGroup',l:'Abs. Group',r:false},{f:'Category',l:'Category',r:false},{f:'CheckStatus',l:'Status',r:false,type:'select'}].map(({f,l,r,span,type}) => (
+                      <div key={f} className={span ? `col-span-${span}` : ''}>
+                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">{l}</label>
+                        {type === 'select' ? (
+                          <select name={f} defaultValue={currentEmployee?.[f] || 'Active'}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none bg-gray-50 focus:bg-white transition-all">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                          </select>
+                        ) : (
+                          <input name={f} defaultValue={currentEmployee?.[f] || ''}
+                            required={r} readOnly={f==='id'}
+                            placeholder={f==='EMPNO'?'e.g. DEF001':f==='SNAME'?'Employee full name':''}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none bg-gray-50 focus:bg-white transition-all" />
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* ── SECTION 2: Salary Components ────────────────── */}
+                <div>
+                  <h3 className="text-xs font-black text-green-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                    Salary Components
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      {f:'PAY',l:'Basic Pay ₹'},{f:'GradePay',l:'Grade Pay ₹'},{f:'DA',l:'DA ₹'},
+                      {f:'HATA',l:'HRA/HATA ₹'},{f:'Allowance',l:'Allowance ₹'},{f:'SPECIAL',l:'Special ₹'},
+                      {f:'INTERIM',l:'Interim ₹'},{f:'EPF',l:'EPF %/₹'},{f:'ESI',l:'ESI %/₹'},
+                    ].map(({f,l}) => (
+                      <div key={f}>
+                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">{l}</label>
+                        <input name={f} defaultValue={currentEmployee?.[f] || ''} type="text" inputMode="decimal"
+                          placeholder="0"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none bg-gray-50 focus:bg-white transition-all" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── SECTION 3: Bank & Personal ──────────────────── */}
+                <div>
+                  <h3 className="text-xs font-black text-purple-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                    Bank &amp; Personal Info
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      {f:'AccountNo',l:'Account No.'},{f:'BankName',l:'Bank Name'},{f:'IFSCCode',l:'IFSC Code'},
+                      {f:'DOB',l:'Date of Birth',t:'date'},{f:'JDATE',l:'Date of Joining',t:'date'},
+                    ].map(({f,l,t}) => (
+                      <div key={f}>
+                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">{l}</label>
+                        <input name={f} defaultValue={currentEmployee?.[f] || ''} type={t||'text'}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none bg-gray-50 focus:bg-white transition-all" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── SECTION 4: Advanced (collapsed by default) ───── */}
+                <AdvancedSection currentEmployee={currentEmployee} />
+
               </div>
 
-              <div className="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
-                <button
-                  type="button"
-                  onClick={() => set('modalOpen', false)}
-                  className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
-                >
+              <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+                <button type="button" onClick={() => set('modalOpen', false)}
+                  className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors text-sm">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-lg bg-blue-700 text-white font-bold hover:bg-blue-800 shadow-lg shadow-blue-700/20 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  <Save size={18} />
+                <button type="submit"
+                  className="px-5 py-2.5 rounded-lg bg-blue-700 text-white font-bold hover:bg-blue-800 shadow-lg shadow-blue-700/20 active:scale-95 transition-all flex items-center gap-2 text-sm">
+                  <Save size={16} />
                   {currentEmployee?.id ? "Update Record" : "Save Record"}
                 </button>
               </div>

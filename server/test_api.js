@@ -1,36 +1,24 @@
-import http from 'http';
+import axios from 'axios';
+import dotenv from 'dotenv';
+dotenv.config({ path: 'c:/Users/Hp/Documents/enterprise-payroll-web-529/server/.env' });
 
-const options = {
-  hostname: 'localhost',
-  port: 5005,
-  path: '/api/health',
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-};
-
-console.log('Testing health endpoint...');
-console.log('Connecting to:', `http://${options.hostname}:${options.port}${options.path}`);
-
-const req = http.request(options, (res) => {
-  console.log('Status:', res.statusCode);
-  let data = '';
-  res.on('data', (chunk) => data += chunk);
-  res.on('end', () => {
-    console.log('Response headers:', res.headers);
+async function testApi() {
+    const PORT = process.env.PORT || 5005;
+    const url = `http://localhost:${PORT}/api/attendance/monthly?month=3&year=2026`;
+    
     try {
-      const json = JSON.parse(data);
-      console.log('Response:', JSON.stringify(json, null, 2));
-    } catch(e) {
-      console.log('Raw response:', data);
+        console.log(`Testing GET ${url}...`);
+        // We need a token since it's likely protected
+        // But let's see if 500 happens before 401
+        const res = await axios.get(url);
+        console.log('Response:', res.data);
+    } catch (err) {
+        if (err.response) {
+            console.log('Status:', err.response.status);
+            console.log('Data:', err.response.data);
+        } else {
+            console.error('Error:', err.message);
+        }
     }
-  });
-});
-
-req.on('error', (e) => {
-  console.error('Request error:', e.message);
-  console.error('Error code:', e.code);
-});
-
-req.end();
+}
+testApi();

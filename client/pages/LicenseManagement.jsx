@@ -209,15 +209,16 @@ export default function LicenseManagement() {
                                         <p className="text-[10px] font-medium opacity-70">Linked on {new Date(tenant.linkDate).toLocaleDateString()}</p>
                                     </div>
                                 </div>
-                                <button className="w-full py-3 rounded-xl border border-slate-700 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition">
+                                <button type="button" className="w-full py-3 rounded-xl border border-slate-700 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition">
                                     Disconnect SaaS Engine
                                 </button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <form onSubmit={(e) => { e.preventDefault(); handleCloudLink(); }} className="space-y-4">
                                 <div className="space-y-3">
                                     <input
                                         type="text"
+                                        autoComplete="username"
                                         placeholder="Tenant ID (e.g. school-01)"
                                         value={onboarding.tenantId}
                                         onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'onboarding', value: { ...onboarding, tenantId: e.target.value } })}
@@ -225,6 +226,7 @@ export default function LicenseManagement() {
                                     />
                                     <input
                                         type="password"
+                                        autoComplete="current-password"
                                         placeholder="Activation Token (SAAS_...)"
                                         value={onboarding.token}
                                         onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'onboarding', value: { ...onboarding, token: e.target.value } })}
@@ -232,12 +234,13 @@ export default function LicenseManagement() {
                                     />
                                 </div>
                                 <button
-                                    onClick={handleCloudLink}
+                                    type="submit"
                                     className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-4 flex items-center justify-center gap-2 font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-blue-500/20"
                                 >
+                                    <Link2 className="w-4 h-4" />
                                     Link to Cloud Tenant
                                 </button>
-                            </div>
+                            </form>
                         )}
                     </div>
 

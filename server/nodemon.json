@@ -1,0 +1,8 @@
+{
+    "ignore": [
+        "beta-metrics.json",
+        "*.log",
+        "*.sqlite",
+        "*.db"
+    ]
+}

@@ -8,6 +8,7 @@
     "server"
   ],
   "scripts": {
+    "start": "npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "npm run dev --workspace enterprise-payroll-client",
     "server": "npm run dev --workspace enterprise-payroll-server",
@@ -22,11 +23,8 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-<<<<<<< HEAD
-=======
     "electron-updater": "^6.7.3",
     "exceljs": "^4.4.0",
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",

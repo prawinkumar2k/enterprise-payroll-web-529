@@ -5,7 +5,8 @@ import {
     getMonthlyAttendance,
     getAttendanceReports,
     importAttendance,
-    myAttendanceSummary
+    myAttendanceSummary,
+    getAttendanceAnalytics
 } from '../controllers/attendance.controller.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
@@ -28,6 +29,7 @@ router.get('/monthly', getMonthlyAttendance);
 
 // Attendance Reports
 router.get('/reports', getAttendanceReports);
+router.get('/analytics', getAttendanceAnalytics);
 
 // Import Attendance
 router.post('/import', importAttendance);

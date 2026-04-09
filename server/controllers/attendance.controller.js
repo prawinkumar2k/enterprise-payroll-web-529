@@ -57,8 +57,7 @@ export const getDailyAttendance = async (req, res) => {
         res.json({ success: true, data });
 
     } catch (error) {
-        console.error('Get Daily Attendance Error:', error.message);
-        res.json({ success: true, data: [], message: 'Could not load attendance' });
+        res.status(500).json({ success: false, data: [], message: 'Could not load attendance' });
     }
 };
 
@@ -72,42 +71,51 @@ export const markDailyAttendance = async (req, res) => {
 
     const connection = await dbManager.getConnection();
 
-
     try {
         await connection.beginTransaction();
 
-        // ── BULK DELETE then BULK INSERT (was: N deletions + N insertions in a loop) ──────
-        // Step 1: Delete all existing attendance for this date in ONE query
-        const dateStart = `${date} 00:00:00`;
-        const dateEnd = `${date} 23:59:59`;
-        await connection.query(
-            'DELETE FROM staffattendance WHERE ADATE BETWEEN ? AND ?',
-            [dateStart, dateEnd]
-        );
+        // 1. Fetch metadata from empdet to ensure data integrity
+        const [empMetadata] = await connection.query('SELECT EMPNO, SNAME, Designation, Category FROM empdet WHERE deleted_at IS NULL');
+        const empMap = new Map(empMetadata.map(e => [e.EMPNO, e]));
 
-        // Step 2: Build one bulk INSERT for all records with a status
+        // 2. Filter records that have a status (Present/Absent/etc)
         const activeRecords = records.filter(r => r.Status);
+        
         if (activeRecords.length > 0) {
-            const now = new Date().toISOString();
+            const now = new Date().toLocaleString('sv-SE').replace('T', ' ').substring(0, 19);
             const values = activeRecords.map(record => {
-                const { EMPNO, Status, Remark, SNAME, Designation } = record;
-                const leaveCount = (Status !== 'Present' && Status !== 'WO' && Status !== 'H') ? 1.0 : 0.0;
-                const lopCount = (Status === 'LOP' || Status === 'Absent') ? 1.0 : 0.0;
-                const uuid = randomUUID();
-                return [uuid, date, EMPNO, SNAME || '', Designation || '', record.Category || '',
-                    Status, leaveCount, 'Full', Remark || '', lopCount,
-                    user.username, 0, 'SERVER_01', now, now];
+                const emp = empMap.get(record.EMPNO) || {};
+                const { EMPNO, Status, Remark, Sessions } = record;
+                const statusStr = Status.toString();
+                
+                // Logic for leave/lop counts (Enterprise Hardening)
+                const leaveCount = (['Present', 'WO', 'H'].includes(statusStr)) ? 0.0 : 1.0;
+                const lopCount = (['LOP', 'Absent'].includes(statusStr)) ? 1.0 : 0.0;
+                
+                return [
+                    randomUUID(), date, EMPNO, emp.SNAME || '', emp.Designation || '', emp.Category || '',
+                    statusStr, leaveCount, Sessions || 'Full', Remark || '', lopCount,
+                    user.username, 0, 'SERVER_01', now, now
+                ];
             });
 
-            const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
-            const flat = values.flat();
-
-            await connection.query(
-                `INSERT INTO staffattendance 
-                 (uuid, ADATE, EMPNO, SNAME, DESIGNATION, Category, AttType, \`Leave\`, Sessions, Remark, LOP, CREATED_BY, is_synced, device_id, created_at, updated_at) 
-                 VALUES ${placeholders}`,
-                flat
-            );
+            // 3. ATOMIC BULK UPSERT (Phase 2 Backend Hardening)
+            // Note: This requires a UNIQUE KEY (EMPNO, ADATE) on staffattendance
+            await connection.query(`
+                INSERT INTO staffattendance (
+                    uuid, ADATE, EMPNO, SNAME, DESIGNATION, Category, 
+                    AttType, \`Leave\`, Sessions, Remark, LOP, 
+                    device_id, is_synced, sync_version, created_at, updated_at
+                ) VALUES ? 
+                ON DUPLICATE KEY UPDATE 
+                    AttType = VALUES(AttType),
+                    \`Leave\` = VALUES(\`Leave\`),
+                    Sessions = VALUES(Sessions),
+                    Remark = VALUES(Remark),
+                    LOP = VALUES(LOP),
+                    updated_at = VALUES(updated_at),
+                    sync_version = sync_version + 1
+            `, [values]);
         }
 
         await connection.commit();
@@ -115,9 +123,9 @@ export const markDailyAttendance = async (req, res) => {
         // ── Invalidate cache + rebuild summary in background (non-blocking) ──
         const dateObj = new Date(date);
         const monthStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-        cache.invalidate(`dashboard:`);
-        cache.invalidate(`summary:${monthStr}`);
-        cache.invalidate(`report:monthly-summary:${monthStr}`);
+        await cache.invalidate(`dashboard:`);
+        await cache.invalidate(`summary:${monthStr}`);
+        await cache.invalidate(`report:monthly-summary:${monthStr}`);
         // Async rebuild — don't await, don't block response
         summaryService.rebuildMonth(monthStr).catch(() => { });
 
@@ -176,8 +184,7 @@ export const getMonthlyAttendance = async (req, res) => {
         res.json({ success: true, data });
 
     } catch (error) {
-        console.error('Monthly Attendance Error:', error.message);
-        res.json({ success: true, data: [], message: 'Could not load monthly summary' });
+        res.status(500).json({ success: false, data: [], message: 'Could not load monthly summary' });
     }
 };
 
@@ -411,4 +418,32 @@ export const myAttendanceSummary = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+/**
+ * Attendance Analytics (Phase 6.3)
+ */
+export const getAttendanceAnalytics = async (req, res) => {
+    try {
+        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        const today = new Date();
+        const dateStr = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+        const [rows] = await db.query(`
+            SELECT 
+                ADATE as date,
+                SUM(CASE WHEN AttType = 'Present' THEN 1 ELSE 0 END) as present,
+                SUM(CASE WHEN AttType = 'Absent' OR AttType = 'A' THEN 1 ELSE 0 END) as absent,
+                SUM(CASE WHEN AttType = 'LOP' THEN 1 ELSE 0 END) as lop
+            FROM staffattendance
+            WHERE ADATE >= ?
+            GROUP BY ADATE
+            ORDER BY ADATE ASC
+        `, [dateStr]);
+
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 

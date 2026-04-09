@@ -15,7 +15,7 @@ import {
 import DashboardLayout from "../components/DashboardLayout";
 import { useSync, SYNC_MODES } from "../context/SyncContext";
 import axios from "axios";
-import { getApiUrl } from "../lib/api";
+import { getApiUrl } from "../lib/apiClient";
 
 export default function SyncDashboard() {
     const { mode, lastSync, isSyncing, triggerManualSync, refreshStatus } = useSync();

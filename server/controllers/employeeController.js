@@ -1,260 +1,163 @@
-import dbManager from '../database/dbManager.js';
-import { logAudit } from '../utils/auditLogger.js';
-import { randomUUID } from 'crypto';
-import licenseService from '../services/license.service.js';
-import cache from '../services/cache.service.js';
+import db from '../database/dbManager.js';
+import bcrypt from 'bcryptjs';
 
-const EMP_CACHE_KEY = 'employees:list:all';
+// Distance calculation
+function getDistance(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371e3; // meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
 
-const EMP_FIELDS = [
-    'SLNO', 'EMPNO', 'SNAME', 'DESIGNATION', 'AbsGroup', 'DGroup', 'PAY', 'GradePay', 'Category',
-    'PANCARD', 'AccountNo', 'BankName', 'IFSCCode', 'OtherAccNo', 'DOB', 'JDATE', 'RDATE', 'LDATE',
-    'CheckStatus', 'DA', 'EPF', 'ESI', 'MPHIL', 'PHD', 'HATA', 'Allowance', 'SPECIAL', 'INTERIM',
-    'OD', 'CL', 'ML', 'MaL', 'RH', 'SL', 'LOP', 'LopDate'
-];
+/** ── ESS: Self-Service ── **/
+
+export const punchIn = async (req, res) => {
+    const { lat, lng, selfie } = req.body;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+        const [existing] = await db.query('SELECT id FROM employee_attendance_logs WHERE employee_id = ? AND DATE(punch_in_time) = ?', [req.user.id, today]);
+        if (existing.length > 0) return res.status(400).json({ success: false, message: 'Already punched in today.' });
+
+        const [rows] = await db.query('SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ("office_lat", "office_lng", "geofence_radius")');
+        const settings = Object.fromEntries(rows.map(r => [r.setting_key, r.setting_value]));
+        const dist = getDistance(lat, lng, parseFloat(settings.office_lat), parseFloat(settings.office_lng));
+        const isRemote = dist > (parseFloat(settings.geofence_radius) || 500);
+
+        await db.execute('INSERT INTO employee_attendance_logs (employee_id, punch_in_time, in_lat, in_lng, in_selfie_url, is_remote) VALUES (?, NOW(), ?, ?, ?, ?)', [req.user.id, lat, lng, selfie, isRemote]);
+        res.json({ success: true, message: 'Uplink established. Punch-in recorded.', isRemote });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const punchOut = async (req, res) => {
+    const { lat, lng, selfie, description } = req.body;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+        const [logs] = await db.query('SELECT id FROM employee_attendance_logs WHERE employee_id = ? AND DATE(punch_in_time) = ? AND punch_out_time IS NULL', [req.user.id, today]);
+        if (!logs.length) return res.status(400).json({ success: false, message: 'No active session found.' });
+
+        await db.execute('UPDATE employee_attendance_logs SET punch_out_time = NOW(), out_lat = ?, out_lng = ?, out_selfie_url = ?, status = "PRESENT" WHERE id = ?', [lat, lng, selfie, logs[0].id]);
+        if (description) {
+            const filePath = req.file ? `/uploads/work/${req.file.filename}` : null;
+            await db.execute('INSERT INTO work_submissions (attendance_id, employee_id, description, file_path) VALUES (?, ?, ?, ?)', [logs[0].id, req.user.id, description, filePath]);
+        }
+        res.json({ success: true, message: 'Shift terminated. Work data archived.' });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const getMyAttendance = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM employee_attendance_logs WHERE employee_id = ? ORDER BY created_at DESC LIMIT 30', [req.user.id]);
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const getMySalary = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM emppay WHERE EMPNO = ? ORDER BY created_at DESC LIMIT 6', [req.user.username]);
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const getMyWorkSubmissions = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM work_submissions WHERE employee_id = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const applyLeave = async (req, res) => {
+    const { leave_type, from_date, to_date, reason } = req.body;
+    try {
+        await db.execute('INSERT INTO employee_leaves (employee_id, leave_type, from_date, to_date, reason) VALUES (?, ?, ?, ?, ?)', [req.user.id, leave_type, from_date, to_date, reason]);
+        res.json({ success: true, message: 'Leave request registered.' });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const getMyLeaves = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM employee_leaves WHERE employee_id = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const applyPermission = async (req, res) => {
+    const { date, from_time, to_time, reason } = req.body;
+    try {
+        await db.execute('INSERT INTO employee_permissions (employee_id, date, from_time, to_time, reason) VALUES (?, ?, ?, ?, ?)', [req.user.id, date, from_time, to_time, reason]);
+        res.json({ success: true, message: 'Permission request registered.' });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const getMyPermissions = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM employee_permissions WHERE employee_id = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+
+/** ── ADMIN: Management ── **/
 
 export const getEmployees = async (req, res) => {
     try {
-        const cached = cache.get(EMP_CACHE_KEY);
-        if (cached) {
-            res.set('X-Cache', 'HIT');
-            return res.json(cached);
-        }
-        const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NULL ORDER BY id DESC');
-        cache.set(EMP_CACHE_KEY, rows, cache.TTL.EMPLOYEES);
-        res.set('X-Cache', 'MISS');
-        res.json(rows);
-    } catch (error) {
-        console.error('Error fetching employees:', error.message);
-        res.json({ success: true, data: [], message: 'Could not load employees' });
-    }
-};
-
-export const getTrashedEmployees = async (req, res) => {
-    try {
-        const [rows] = await dbManager.query('SELECT * FROM empdet WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
-        res.json(rows);
-    } catch (error) {
-        console.error('Error fetching trashed employees:', error.message);
-        res.json({ success: true, data: [] });
-    }
+        const [rows] = await db.query('SELECT * FROM empdet WHERE deleted_at IS NULL ORDER BY CAST(EMPNO as UNSIGNED) DESC');
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 export const createEmployee = async (req, res) => {
     const data = req.body;
-    const user = req.user || { username: 'SYSTEM' };
-
     try {
-        // --- COMMERCIAL LIMIT CHECK ---
-        const limits = await licenseService.getProductLimits();
-        const [countRow] = await dbManager.query('SELECT COUNT(*) as count FROM empdet WHERE deleted_at IS NULL');
-        const currentCount = countRow[0].count;
-
-        if (currentCount >= limits.maxEmployees) {
-            return res.status(403).json({
-                success: false,
-                message: `Employee limit reached (${limits.maxEmployees}). Please upgrade your license to add more employees.`,
-                isTrial: !limits.isLicensed
-            });
-        }
-    } catch (limitErr) {
-        console.warn('[createEmployee] License check failed, allowing create:', limitErr.message);
-    }
-
-    // Filter: skip undefined AND empty string values so date/numeric columns stay NULL
-    const hasValue = (f) => data[f] !== undefined && data[f] !== '';
-
-    const uuid = randomUUID();
-<<<<<<< HEAD
-    const keys = [...EMP_FIELDS.filter(hasValue), 'uuid', 'is_synced', 'device_id'];
-    const values = [...EMP_FIELDS.filter(hasValue).map(k => data[k]), uuid, 0, 'SERVER_01'];
-=======
-    const now = new Date().toISOString();
-    const keys = [...EMP_FIELDS.filter(f => data[f] !== undefined), 'uuid', 'is_synced', 'device_id', 'created_at', 'updated_at'];
-    const values = [...EMP_FIELDS.filter(f => data[f] !== undefined).map(k => data[k]), uuid, 0, 'SERVER_01', now, now];
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
-    const placeholders = keys.map(() => '?').join(', ');
-
-
-    if (keys.length <= 3) {
-        return res.status(400).json({ error: "No valid fields provided" });
-    }
-
-    const query = `INSERT INTO empdet (${keys.map(k => '\`'+k+'\`').join(', ')}) VALUES (${placeholders})`;
-
-    try {
-        const result = await dbManager.execute(query, values);
-        cache.invalidate('employees:');
-
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'CREATE_EMPLOYEE',
-            module: 'EMPLOYEE',
-            description: `Created employee ${data.EMPNO}`,
-            newValue: { ...data, uuid },
-            ip: req.socket.remoteAddress
-        });
-
-        res.status(201).json({ id: result.insertId, uuid, ...data });
-    } catch (error) {
-        console.error('Error creating employee:', error.message);
-        const isDupe = error.code === 'ER_DUP_ENTRY' || error.code === 'SQLITE_CONSTRAINT';
-        res.status(isDupe ? 409 : 400).json({ success: false, error: isDupe ? 'Employee number already exists' : error.message });
-    }
+        const fields = Object.keys(data);
+        const placeholders = fields.map(() => '?').join(', ');
+        const sql = `INSERT INTO empdet (${fields.join(', ')}) VALUES (${placeholders})`;
+        const [result] = await db.execute(sql, Object.values(data));
+        
+        await db.execute('INSERT IGNORE INTO users (UserID, Password, UserName, Role) VALUES (?, ?, ?, "EMPLOYEE")', [data.EMPNO, await bcrypt.hash(data.EMPNO, 10), data.SNAME]);
+        res.json({ success: true, id: result.insertId });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 export const updateEmployee = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
-    const user = req.user || { username: 'SYSTEM' };
-
-    const connection = await dbManager.getConnection();
     try {
-        await connection.beginTransaction();
-
-        const [existing] = await connection.query('SELECT * FROM empdet WHERE id = ? FOR UPDATE', [id]);
-        if (existing.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: "Employee not found" });
-        }
-
-        const keys = EMP_FIELDS.filter(f => data[f] !== undefined && data[f] !== '');
-        const values = keys.map(k => data[k]);
-
-        if (keys.length === 0) {
-            await connection.rollback();
-            return res.status(400).json({ error: "No valid fields provided" });
-        }
-
-        const setClause = keys.map(k => `\`${k}\` = ?`).join(', ');
-        const query = `UPDATE empdet SET ${setClause}, is_synced = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-
-        await connection.query(query, [...values, id]);
-        await connection.commit();
-        cache.invalidate('employees:');
-
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'UPDATE_EMPLOYEE',
-            module: 'EMPLOYEE',
-            description: `Updated employee ${id}`,
-            oldValue: existing[0],
-            newValue: { ...existing[0], ...data },
-            ip: req.socket.remoteAddress
-        });
-
-        res.json({ id, ...data });
-    } catch (error) {
-        try { await connection.rollback(); } catch { }
-        console.error('Error updating employee:', error.message);
-        res.status(400).json({ success: false, error: error.message });
-    } finally {
-        connection.release();
-    }
+        const fields = Object.keys(data).map(k => `${k} = ?`).join(', ');
+        const values = [...Object.values(data), id];
+        await db.execute(`UPDATE empdet SET ${fields} WHERE id = ?`, values);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 export const deleteEmployee = async (req, res) => {
-    const { id } = req.params;
-    const user = req.user || { username: 'SYSTEM' };
-
     try {
-        const [existing] = await dbManager.query('SELECT * FROM empdet WHERE id = ?', [id]);
-        if (existing.length === 0) {
-            return res.status(404).json({ error: "Employee not found" });
-        }
+        await db.execute('UPDATE empdet SET deleted_at = NOW() WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
-        await dbManager.execute('UPDATE empdet SET deleted_at = CURRENT_TIMESTAMP, is_synced = 0 WHERE id = ?', [id]);
-        cache.invalidate('employees:');
-
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'DELETE_EMPLOYEE',
-            module: 'EMPLOYEE',
-            description: `Soft deleted employee ${existing[0].EMPNO}`,
-            oldValue: existing[0],
-            ip: req.socket.remoteAddress
-        });
-
-        res.json({ message: "Employee moved to trash" });
-    } catch (error) {
-        console.error('Error deleting employee:', error.message);
-        res.status(400).json({ success: false, error: error.message });
-    }
+export const getTrashedEmployees = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM empdet WHERE deleted_at IS NOT NULL');
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 export const restoreEmployee = async (req, res) => {
-    const { id } = req.params;
-    const user = req.user || { username: 'SYSTEM' };
-
     try {
-        await dbManager.execute('UPDATE empdet SET deleted_at = NULL, is_synced = 0 WHERE id = ?', [id]);
-        cache.invalidate('employees:');
-
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'RESTORE_EMPLOYEE',
-            module: 'EMPLOYEE',
-            description: `Restored employee ${id}`,
-            ip: req.socket.remoteAddress
-        });
-
-        res.json({ message: "Employee restored" });
-    } catch (error) {
-        console.error('Error restoring employee:', error.message);
-        res.status(400).json({ success: false, error: error.message });
-    }
+        await db.execute('UPDATE empdet SET deleted_at = NULL WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 export const getNextEmpno = async (req, res) => {
     try {
-        const companyCode = (req.user?.company_code || 'DEFAULT').toUpperCase();
-        // Build prefix: if code is longer than 5 chars use first 3, else use full code
-        const prefix = companyCode.length > 5 ? companyCode.slice(0, 3) : companyCode;
-
-        // Find all EMPNOs that start with this prefix
-        const [rows] = await dbManager.query(
-            'SELECT EMPNO FROM empdet WHERE EMPNO LIKE ? ORDER BY id DESC',
-            [`${prefix}%`]
-        );
-
-        // Parse the numeric suffix, find the max
-        const nums = rows
-            .map(r => parseInt(String(r.EMPNO).replace(prefix, ''), 10))
-            .filter(n => Number.isFinite(n) && n > 0);
-        const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-        const empno = prefix + String(next).padStart(3, '0');
-
-        res.json({ empno, prefix, next });
-    } catch (error) {
-        console.error('Error generating next EMPNO:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
-
-export const permanentDeleteEmployee = async (req, res) => {
-    const { id } = req.params;
-    const user = req.user || { username: 'SYSTEM' };
-
-    try {
-        await dbManager.execute('DELETE FROM empdet WHERE id = ?', [id]);
-        cache.invalidate('employees:');
-
-        await logAudit({
-            userId: user.username,
-            username: user.name || user.username,
-            actionType: 'PERMANENT_DELETE_EMPLOYEE',
-            module: 'EMPLOYEE',
-            description: `Permanently deleted employee ${id}`,
-            ip: req.socket.remoteAddress
-        });
-
-        res.json({ message: "Employee deleted permanently" });
-    } catch (error) {
-        console.error('Error permanently deleting employee:', error.message);
-        res.status(400).json({ success: false, error: error.message });
-    }
+        const [rows] = await db.query('SELECT MAX(CAST(EMPNO as UNSIGNED)) as max_no FROM empdet');
+        const next = (rows[0].max_no || 0) + 1;
+        res.json({ success: true, next: next.toString() });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };

@@ -40,17 +40,10 @@ export const updateSettings = async (req, res) => {
         // Use dualDB transaction for atomic dual-database update
         await dbManager.transaction(async (db) => {
             for (const key of keys) {
-<<<<<<< HEAD
-                const value = String(updates[key]); // Store all as string
-                // Use REPLACE INTO for cross-database compatibility (MySQL + SQLite)
-                await connection.query(
-                    'REPLACE INTO app_settings (setting_key, setting_value) VALUES (?, ?)',
-=======
                 const value = String(updates[key]);
+                // Use REPLACE INTO for cross-database compatibility (MySQL + SQLite)
                 await db.execute(
-                    `INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
-                     ON CONFLICT(setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = datetime('now','localtime')`,
->>>>>>> 60eb1353e3ebfe73e68f225b57a8ceadc0bc0fee
+                    'REPLACE INTO app_settings (setting_key, setting_value) VALUES (?, ?)',
                     [key, value]
                 );
             }
@@ -62,3 +55,4 @@ export const updateSettings = async (req, res) => {
         res.status(400).json({ success: false, message: error.message || 'Failed to update settings' });
     }
 };
+
